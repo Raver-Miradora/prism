@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PRISM - Profile &amp; Settings</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;700;800;900&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-tertiary-fixed-variant": "#005227",
+              "tertiary-fixed": "#83fba5",
+              "surface-tint": "#4b53bc",
+              "on-error-container": "#93000a",
+              "on-primary-fixed": "#00006e",
+              "on-background": "#191c1d",
+              "outline-variant": "#c6c5d5",
+              "on-primary": "#ffffff",
+              "error": "#ba1a1a",
+              "inverse-primary": "#bfc2ff",
+              "on-primary-fixed-variant": "#3239a3",
+              "secondary-fixed": "#e0e0ff",
+              "surface-container-high": "#e7e8e9",
+              "on-surface-variant": "#464653",
+              "surface-container-low": "#f3f4f5",
+              "on-secondary": "#ffffff",
+              "surface-container-lowest": "#ffffff",
+              "on-tertiary-container": "#179d53",
+              "surface-container-highest": "#e1e3e4",
+              "on-secondary-fixed-variant": "#41436c",
+              "on-secondary-fixed": "#15173d",
+              "on-surface": "#191c1d",
+              "secondary-container": "#cccefe",
+              "primary-fixed": "#e0e0ff",
+              "on-secondary-container": "#545680",
+              "primary-container": "#000080",
+              "surface-bright": "#f8f9fa",
+              "error-container": "#ffdad6",
+              "on-primary-container": "#777eea",
+              "inverse-surface": "#2e3132",
+              "background": "#f8f9fa",
+              "secondary": "#585b85",
+              "outline": "#767684",
+              "surface": "#f8f9fa",
+              "inverse-on-surface": "#f0f1f2",
+              "surface-variant": "#e1e3e4",
+              "on-tertiary": "#ffffff",
+              "primary": "#00003c",
+              "secondary-fixed-dim": "#c1c3f3",
+              "tertiary": "#000e03",
+              "primary-fixed-dim": "#bfc2ff",
+              "surface-container": "#edeeef",
+              "tertiary-container": "#002810",
+              "tertiary-fixed-dim": "#66dd8b",
+              "on-tertiary-fixed": "#00210c",
+              "on-error": "#ffffff",
+              "surface-dim": "#d9dadb"
+            },
+            fontFamily: {
+              "headline": ["Public Sans"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .institutional-slide-in {
+        animation: slideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+      @keyframes slideIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-slate-50/85 backdrop-blur-md">
+<div class="flex items-center justify-between px-6 py-4 w-full max-w-screen-xl mx-auto">
+<div class="flex items-center gap-4">
+<button class="text-blue-900 hover:bg-slate-200/50 p-2 rounded-full transition-colors active:scale-95 duration-200">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<h1 class="text-xl font-black uppercase tracking-tighter text-blue-900 font-headline">PRISM</h1>
+</div>
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 rounded-full overflow-hidden border-2 border-primary/10">
+<img alt="User Profile Avatar" class="w-full h-full object-cover" data-alt="professional portrait of a young male professional in a neutral grey studio setting with soft lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCeM6aIav-nn7Zz0BgE-xsOhebnAAq67qlz8-GZxxEEEHBnIJu1kDVjqnq2ffBz0x3YA2XoV1TK_5C7FBZKQqPHWrDEd3uk9zAS2shD4cGZeap5zhQVZKIoYhL_JtMuYlrfRNU9HGwAPWxrIl-9rt26gAS3y9t4kQVWGdkq1i0zf4LIdwKc61n8WGwlQrFojVo7NjU-k4FQNhCqQp21DmRC02toeE52aWIBwaggd_W_IMIbAgAXD8foPEAnqaVVAcQeP7tbMnrLrGQ"/>
+</div>
+</div>
+</div>
+<div class="bg-slate-200/50 h-[1px] w-full"></div>
+</header>
+<!-- Main Content -->
+<main class="pt-24 px-6 max-w-3xl mx-auto space-y-8">
+<!-- Editorial Header -->
+<div class="space-y-1 institutional-slide-in" style="animation-delay: 0.1s;">
+<span class="text-xs font-bold tracking-[0.2em] text-on-surface-variant uppercase font-label">Registry Profile</span>
+<h2 class="text-4xl font-black text-primary font-headline tracking-tight">Settings</h2>
+</div>
+<!-- Profile Information Section -->
+<section class="space-y-6 institutional-slide-in" style="animation-delay: 0.2s;">
+<div class="bg-surface-container-low rounded-xl p-8 space-y-8">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<!-- Text Inputs -->
+<div class="space-y-6 md:col-span-2">
+<div class="relative">
+<label class="block text-xs font-bold text-on-surface-variant mb-2 uppercase tracking-wider font-label">Intern Full Name</label>
+<input class="w-full bg-surface-container-high border-0 border-b-2 border-outline-variant/30 focus:border-primary focus:ring-0 px-0 py-3 text-lg font-medium transition-colors placeholder-on-surface-variant/40" type="text" value="Alexander Thorne"/>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<div class="relative">
+<label class="block text-xs font-bold text-on-surface-variant mb-2 uppercase tracking-wider font-label">Government Agency/Office</label>
+<input class="w-full bg-surface-container-high border-0 border-b-2 border-outline-variant/30 focus:border-primary focus:ring-0 px-0 py-3 text-on-surface transition-colors" type="text" value="Department of Information Technology"/>
+</div>
+<div class="relative">
+<label class="block text-xs font-bold text-on-surface-variant mb-2 uppercase tracking-wider font-label">Supervisor Name</label>
+<input class="w-full bg-surface-container-high border-0 border-b-2 border-outline-variant/30 focus:border-primary focus:ring-0 px-0 py-3 text-on-surface transition-colors" type="text" value="Dr. Elena Rodriguez"/>
+</div>
+</div>
+</div>
+<!-- Numeric Inputs -->
+<div class="relative">
+<label class="block text-xs font-bold text-on-surface-variant mb-2 uppercase tracking-wider font-label">Total Target Hours</label>
+<div class="flex items-center bg-surface-container-high border-b-2 border-outline-variant/30 px-4 focus-within:border-primary transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant mr-3" data-icon="schedule">schedule</span>
+<input class="w-full bg-transparent border-0 focus:ring-0 py-3 text-on-surface font-semibold" type="number" value="486"/>
+</div>
+</div>
+<div class="relative">
+<label class="block text-xs font-bold text-on-surface-variant mb-2 uppercase tracking-wider font-label">Expected Time In</label>
+<div class="flex items-center bg-surface-container-high border-b-2 border-outline-variant/30 px-4 focus-within:border-primary transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant mr-3" data-icon="alarm">alarm</span>
+<input class="w-full bg-transparent border-0 focus:ring-0 py-3 text-on-surface font-semibold" type="text" value="08:00 AM"/>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Data Management Section -->
+<section class="institutional-slide-in" style="animation-delay: 0.3s;">
+<div class="bg-surface-container-lowest border border-outline-variant/10 rounded-xl p-8 shadow-sm">
+<div class="flex items-center gap-4 mb-6">
+<div class="p-3 bg-primary/5 rounded-lg">
+<span class="material-symbols-outlined text-primary" data-icon="database">database</span>
+</div>
+<div>
+<h3 class="text-xl font-bold text-primary font-headline">Data Management</h3>
+<p class="text-sm text-on-surface-variant">System-wide backup and recovery protocols</p>
+</div>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+<button class="flex items-center justify-center gap-2 px-6 py-4 rounded-lg border-2 border-outline-variant hover:bg-surface-container-high transition-all active:scale-95 group">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors" data-icon="cloud_upload">cloud_upload</span>
+<span class="font-bold text-on-surface-variant group-hover:text-primary font-label uppercase tracking-wide text-xs">Backup Database</span>
+</button>
+<button class="flex items-center justify-center gap-2 px-6 py-4 rounded-lg border-2 border-outline-variant hover:bg-surface-container-high transition-all active:scale-95 group">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors" data-icon="settings_backup_restore">settings_backup_restore</span>
+<span class="font-bold text-on-surface-variant group-hover:text-primary font-label uppercase tracking-wide text-xs">Restore Database</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Save Button Floating (Optional UI enhancement) -->
+<div class="flex justify-end institutional-slide-in" style="animation-delay: 0.4s;">
+<button class="bg-gradient-to-br from-primary to-primary-container text-white px-10 py-4 rounded-lg font-bold shadow-xl hover:opacity-90 transition-all active:scale-95 font-label uppercase tracking-widest text-xs">
+                Commit Changes
+            </button>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 bg-white/90 backdrop-blur-xl shadow-[0_-4px_20px_0_rgba(0,0,0,0.05)] rounded-t-2xl border-t border-slate-200/20">
+<div class="flex justify-around items-center px-4 pb-6 pt-3">
+<!-- Home -->
+<div class="flex flex-col items-center justify-center text-slate-500 px-5 py-1.5 hover:text-blue-700 transition-all active:scale-90 duration-150">
+<span class="material-symbols-outlined mb-1" data-icon="home">home</span>
+<span class="font-['Inter'] text-[11px] font-semibold tracking-wide uppercase">Home</span>
+</div>
+<!-- Journal -->
+<div class="flex flex-col items-center justify-center text-slate-500 px-5 py-1.5 hover:text-blue-700 transition-all active:scale-90 duration-150">
+<span class="material-symbols-outlined mb-1" data-icon="edit_note">edit_note</span>
+<span class="font-['Inter'] text-[11px] font-semibold tracking-wide uppercase">Journal</span>
+</div>
+<!-- Reports -->
+<div class="flex flex-col items-center justify-center text-slate-500 px-5 py-1.5 hover:text-blue-700 transition-all active:scale-90 duration-150">
+<span class="material-symbols-outlined mb-1" data-icon="analytics">analytics</span>
+<span class="font-['Inter'] text-[11px] font-semibold tracking-wide uppercase">Reports</span>
+</div>
+<!-- Settings (ACTIVE) -->
+<div class="flex flex-col items-center justify-center bg-blue-100/80 text-blue-900 rounded-xl px-5 py-1.5 transition-all active:scale-90 duration-150">
+<span class="material-symbols-outlined mb-1" data-icon="settings" style="font-variation-settings: 'FILL' 1;">settings</span>
+<span class="font-['Inter'] text-[11px] font-bold tracking-wide uppercase">Settings</span>
+</div>
+</div>
+</nav>
+</body></html>

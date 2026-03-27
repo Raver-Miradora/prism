@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PRISM - Digital Registry Timeclock</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@700;800;900&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-tertiary-fixed-variant": "#005227",
+              "tertiary-fixed": "#83fba5",
+              "surface-tint": "#4b53bc",
+              "on-error-container": "#93000a",
+              "on-primary-fixed": "#00006e",
+              "on-background": "#191c1d",
+              "outline-variant": "#c6c5d5",
+              "on-primary": "#ffffff",
+              "error": "#ba1a1a",
+              "inverse-primary": "#bfc2ff",
+              "on-primary-fixed-variant": "#3239a3",
+              "secondary-fixed": "#e0e0ff",
+              "surface-container-high": "#e7e8e9",
+              "on-surface-variant": "#464653",
+              "surface-container-low": "#f3f4f5",
+              "on-secondary": "#ffffff",
+              "surface-container-lowest": "#ffffff",
+              "on-tertiary-container": "#179d53",
+              "surface-container-highest": "#e1e3e4",
+              "on-secondary-fixed-variant": "#41436c",
+              "on-secondary-fixed": "#15173d",
+              "on-surface": "#191c1d",
+              "secondary-container": "#cccefe",
+              "primary-fixed": "#e0e0ff",
+              "on-secondary-container": "#545680",
+              "primary-container": "#000080",
+              "surface-bright": "#f8f9fa",
+              "error-container": "#ffdad6",
+              "on-primary-container": "#777eea",
+              "inverse-surface": "#2e3132",
+              "background": "#f8f9fa",
+              "secondary": "#585b85",
+              "outline": "#767684",
+              "surface": "#f8f9fa",
+              "inverse-on-surface": "#f0f1f2",
+              "surface-variant": "#e1e3e4",
+              "on-tertiary": "#ffffff",
+              "primary": "#00003c",
+              "secondary-fixed-dim": "#c1c3f3",
+              "tertiary": "#000e03",
+              "primary-fixed-dim": "#bfc2ff",
+              "surface-container": "#edeeef",
+              "tertiary-container": "#002810",
+              "tertiary-fixed-dim": "#66dd8b",
+              "on-tertiary-fixed": "#00210c",
+              "on-error": "#ffffff",
+              "surface-dim": "#d9dadb"
+            },
+            fontFamily: {
+              "headline": ["Public Sans"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .registry-shadow {
+        box-shadow: 0 4px 20px 0 rgba(0,0,0,0.05);
+      }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background font-body text-on-background min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-slate-50/85 backdrop-blur-md">
+<div class="flex items-center justify-between px-6 py-4 w-full max-w-screen-xl mx-auto">
+<div class="flex items-center gap-4">
+<button class="text-blue-900 hover:bg-slate-200/50 transition-colors p-2 rounded-full active:scale-95 duration-200">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<h1 class="text-xl font-black uppercase tracking-tighter text-blue-900 font-headline">PRISM</h1>
+</div>
+<div class="flex items-center gap-3">
+<div class="h-8 w-8 rounded-full bg-primary-container flex items-center justify-center overflow-hidden ring-2 ring-white shadow-sm">
+<img alt="User Profile Avatar" class="object-cover w-full h-full" data-alt="Close up portrait of a professional man in a clean office setting, sharp focus, bright professional lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBGk-Fvgr3zIM0ERXwAtXf_Vk068kgBaBt_9_UtIxdKOUjxSGMqDYibLGYEKLMdJPu2UD-SXz0CLZIfAqNeiJZior64yu35DRS41Uzkdk1jUFvdXvXhLXdbBk6rFhScpUllmSO6bXVud3YiU6DEboHnrsgtfJDMu55yZzjJtYgyPaiAWVQgiXlTLS0CFOyyv-4Pb6Y0PpsAAt9U5Y3KU_LGyVnDibeSKOz7vxYo_EyJKkgsQJboQ4rGn1LP9qzKu48tJ9moToMOmc4"/>
+</div>
+</div>
+</div>
+<div class="bg-slate-200/50 h-[1px] w-full"></div>
+</header>
+<main class="pt-24 px-6 max-w-screen-sm mx-auto">
+<!-- Digital Clock Section -->
+<section class="flex flex-col items-center mb-10 text-center">
+<span class="font-label text-on-surface-variant uppercase tracking-widest text-[10px] mb-2 font-bold">Standard Time Registry</span>
+<div class="font-headline text-7xl font-black tracking-tight text-primary">08:30</div>
+<div class="font-headline text-2xl font-bold text-on-primary-container mt-[-8px]">AM</div>
+</section>
+<!-- Status Bar -->
+<div class="flex justify-center gap-6 mb-12">
+<div class="flex items-center gap-2 px-3 py-1.5 bg-surface-container-low rounded-full">
+<span class="material-symbols-outlined text-[14px] text-tertiary-fixed-variant" data-icon="location_on" style="font-variation-settings: 'FILL' 1;">location_on</span>
+<span class="text-[11px] font-bold uppercase tracking-tight text-on-surface-variant">GPS: Active</span>
+</div>
+<div class="flex items-center gap-2 px-3 py-1.5 bg-surface-container-low rounded-full">
+<span class="material-symbols-outlined text-[14px] text-tertiary-fixed-variant" data-icon="photo_camera" style="font-variation-settings: 'FILL' 1;">photo_camera</span>
+<span class="text-[11px] font-bold uppercase tracking-tight text-on-surface-variant">Camera: Ready</span>
+</div>
+</div>
+<!-- Main Action Area: Asymmetric Layout -->
+<div class="grid grid-cols-1 gap-6 mb-12">
+<!-- Clock In (The Primary Action) -->
+<button class="relative group active:scale-[0.98] transition-all duration-200">
+<div class="absolute inset-0 bg-gradient-to-br from-tertiary-fixed-dim to-tertiary-fixed opacity-10 rounded-xl blur-xl group-hover:opacity-20 transition-opacity"></div>
+<div class="relative bg-surface-container-lowest border border-tertiary-fixed-dim/30 p-8 rounded-xl flex items-center justify-between overflow-hidden shadow-sm">
+<div class="flex flex-col items-start text-left">
+<span class="text-[10px] font-black uppercase text-on-tertiary-fixed-variant tracking-widest mb-1">Shift Start</span>
+<h2 class="text-3xl font-black text-on-tertiary-fixed font-headline uppercase italic">Clock In</h2>
+</div>
+<div class="bg-tertiary-fixed-dim p-4 rounded-lg text-on-tertiary-fixed shadow-md">
+<span class="material-symbols-outlined text-4xl" data-icon="camera_front" style="font-variation-settings: 'FILL' 1;">camera_front</span>
+</div>
+</div>
+</button>
+<!-- Clock Out (Secondary / Distinct) -->
+<button class="group active:scale-[0.98] transition-all duration-200">
+<div class="bg-surface-container-low p-6 rounded-xl flex items-center justify-between border-l-4 border-error">
+<div class="flex flex-col items-start text-left">
+<span class="text-[10px] font-bold uppercase text-on-surface-variant tracking-widest mb-1">End Registry</span>
+<h2 class="text-xl font-black text-error font-headline uppercase">Clock Out</h2>
+</div>
+<div class="text-error opacity-60 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-3xl" data-icon="stop_circle" style="font-variation-settings: 'FILL' 1;">stop_circle</span>
+</div>
+</div>
+</button>
+</div>
+<!-- Progress Indicator (The Registry Ledger) -->
+<section class="bg-primary p-8 rounded-xl text-on-primary shadow-xl relative overflow-hidden">
+<!-- Decorative Grain Texture / Abstract Element -->
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary-container rounded-full blur-3xl opacity-40 -translate-y-12 translate-x-12"></div>
+<div class="relative z-10 flex items-center justify-between">
+<div class="flex flex-col">
+<h3 class="font-headline font-black text-xs uppercase tracking-[0.2em] mb-4 text-on-primary-container">Hourglass Progress</h3>
+<div class="flex items-baseline gap-2">
+<span class="text-4xl font-black font-headline">120</span>
+<span class="text-on-primary-container font-bold text-sm">/ 486 Hours</span>
+</div>
+<p class="text-[11px] mt-2 text-on-primary-container uppercase font-bold tracking-wider">Completed this cycle</p>
+</div>
+<!-- Circular Progress Bar -->
+<div class="relative flex items-center justify-center w-24 h-24">
+<svg class="w-full h-full transform -rotate-90">
+<circle class="text-primary-container" cx="48" cy="48" fill="transparent" r="40" stroke="currentColor" stroke-width="8"></circle>
+<circle class="text-tertiary-fixed-dim" cx="48" cy="48" fill="transparent" r="40" stroke="currentColor" stroke-dasharray="251.2" stroke-dashoffset="189" stroke-width="8"></circle>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center">
+<span class="text-[10px] font-black">24%</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 bg-white/90 backdrop-blur-xl border-t border-slate-200/20 px-4 pb-6 pt-3 flex justify-around items-center">
+<!-- Home (Active) -->
+<a class="flex flex-col items-center justify-center bg-blue-100/80 text-blue-900 rounded-xl px-5 py-1.5 transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="home" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="font-['Inter'] text-[11px] font-semibold tracking-wide uppercase mt-1">Home</span>
+</a>
+<!-- Journal -->
+<a class="flex flex-col items-center justify-center text-slate-500 px-5 py-1.5 transition-all hover:text-blue-700 active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="edit_note">edit_note</span>
+<span class="font-['Inter'] text-[11px] font-semibold tracking-wide uppercase mt-1">Journal</span>
+</a>
+<!-- Reports -->
+<a class="flex flex-col items-center justify-center text-slate-500 px-5 py-1.5 transition-all hover:text-blue-700 active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-['Inter'] text-[11px] font-semibold tracking-wide uppercase mt-1">Reports</span>
+</a>
+<!-- Settings -->
+<a class="flex flex-col items-center justify-center text-slate-500 px-5 py-1.5 transition-all hover:text-blue-700 active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-['Inter'] text-[11px] font-semibold tracking-wide uppercase mt-1">Settings</span>
+</a>
+</nav>
+</body></html>
