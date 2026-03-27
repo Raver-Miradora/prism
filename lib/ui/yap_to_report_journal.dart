@@ -33,7 +33,6 @@ class YapToReportJournal extends StatelessWidget {
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomNavBar(),
     );
   }
 

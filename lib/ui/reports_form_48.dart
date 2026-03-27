@@ -33,7 +33,6 @@ class ReportsForm48 extends StatelessWidget {
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomNavBar(),
     );
   }
 

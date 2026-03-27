@@ -33,7 +33,6 @@ class DashboardTimeclock extends StatelessWidget {
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomNavBar(),
     );
   }
 

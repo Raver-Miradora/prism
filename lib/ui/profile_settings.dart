@@ -33,7 +33,6 @@ class ProfileSettings extends StatelessWidget {
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomNavBar(),
     );
   }
 
