@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../core/theme/civic_horizon_theme.dart';
 import '../controllers/timeclock_controller.dart';
 import 'widgets/prism_drawer.dart';
+import 'widgets/profile_avatar.dart';
 
 class DashboardTimeclock extends ConsumerWidget {
   const DashboardTimeclock({super.key});
@@ -89,19 +90,7 @@ class DashboardTimeclock extends ConsumerWidget {
               ),
             ],
           ),
-          Container(
-            height: 32,
-            width: 32,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 2),
-              color: CivicHorizonTheme.primaryContainer,
-              image: const DecorationImage(
-                image: NetworkImage('https://lh3.googleusercontent.com/aida-public/AB6AXuBGk-Fvgr3zIM0ERXwAtXf_Vk068kgBaBt_9_UtIxdKOUjxSGMqDYibLGYEKLMdJPu2UD-SXz0CLZIfAqNeiJZior64yu35DRS41Uzkdk1jUFvdXvXhLXdbBk6rFhScpUllmSO6bXVud3YiU6DEboHnrsgtfJDMu55yZzjJtYgyPaiAWVQgiXlTLS0CFOyyv-4Pb6Y0PpsAAt9U5Y3KU_LGyVnDibeSKOz7vxYo_EyJKkgsQJboQ4rGn1LP9qzKu48tJ9moToMOmc4'),
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
+          const ProfileAvatar(size: 32),
         ],
       ),
     );

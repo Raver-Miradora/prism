@@ -9,6 +9,7 @@ import '../core/theme/civic_horizon_theme.dart';
 import '../core/database/database_helper.dart';
 import '../controllers/settings_controller.dart';
 import 'widgets/prism_drawer.dart';
+import 'widgets/profile_avatar.dart';
 
 class ProfileSettings extends ConsumerStatefulWidget {
   const ProfileSettings({super.key});
@@ -23,6 +24,7 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
   late TextEditingController _supervisorController;
   late TextEditingController _hoursController;
   late TextEditingController _timeInController;
+  bool _hasPopulated = false;
 
   @override
   void initState() {
@@ -32,20 +34,21 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
     _supervisorController = TextEditingController();
     _hoursController = TextEditingController();
     _timeInController = TextEditingController();
-    
-    // Defer initialization to after layout to read from Riverpod state
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final state = ref.read(settingsProvider);
-      if (state.profile != null) {
-        _nameController.text = state.profile!.name;
-        _agencyController.text = state.profile!.agencyOffice;
-        _supervisorController.text = state.profile!.supervisorName;
-      }
-      if (state.settings != null) {
-        _hoursController.text = state.settings!.targetHours.toString();
-        _timeInController.text = state.settings!.expectedTimeIn;
-      }
-    });
+  }
+
+  void _populateControllers(SettingsState state) {
+    if (_hasPopulated) return;
+    if (state.isLoading) return;
+    _hasPopulated = true;
+    if (state.profile != null) {
+      _nameController.text = state.profile!.name;
+      _agencyController.text = state.profile!.agencyOffice;
+      _supervisorController.text = state.profile!.supervisorName;
+    }
+    if (state.settings != null) {
+      _hoursController.text = state.settings!.targetHours.toString();
+      _timeInController.text = state.settings!.expectedTimeIn;
+    }
   }
 
   @override
@@ -125,6 +128,8 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(settingsProvider);
+    // Populate TextEditingControllers when data arrives
+    _populateControllers(state);
 
     return Scaffold(
       backgroundColor: CivicHorizonTheme.background,
@@ -160,7 +165,6 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
   }
 
   Widget _buildTopAppBar(SettingsState state) {
-    final hasImage = state.profile?.profileImagePath != null && state.profile!.profileImagePath!.isNotEmpty;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -199,25 +203,7 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
           ),
           GestureDetector(
             onTap: () => ref.read(settingsProvider.notifier).pickImage(),
-            child: Container(
-              height: 44,
-              width: 44,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: CivicHorizonTheme.surfaceContainerHighest,
-                border: Border.all(color: CivicHorizonTheme.primary.withAlpha(51), width: 2),
-                image: hasImage
-                    ? DecorationImage(
-                        image: FileImage(File(state.profile!.profileImagePath!)),
-                        fit: BoxFit.cover,
-                      )
-                    : const DecorationImage(
-                        image: NetworkImage('https://lh3.googleusercontent.com/aida-public/AB6AXuBGk-Fvgr3zIM0ERXwAtXf_Vk068kgBaBt_9_UtIxdKOUjxSGMqDYibLGYEKLMdJPu2UD-SXz0CLZIfAqNeiJZior64yu35DRS41Uzkdk1jUFvdXvXhLXdbBk6rFhScpUllmSO6bXVud3YiU6DEboHnrsgtfJDMu55yZzjJtYgyPaiAWVQgiXlTLS0CFOyyv-4Pb6Y0PpsAAt9U5Y3KU_LGyVnDibeSKOz7vxYo_EyJKkgsQJboQ4rGn1LP9qzKu48tJ9moToMOmc4'),
-                        fit: BoxFit.cover,
-                      ),
-              ),
-              child: hasImage ? null : const Icon(Icons.add_a_photo, size: 16, color: Colors.white70),
-            ),
+            child: const ProfileAvatar(size: 44),
           ),
         ],
       ),

@@ -42,4 +42,21 @@ class DailyReportRepository {
     }
     return null;
   }
+
+  /// Retrieve all reports for a specific year-month
+  Future<List<DailyReport>> getReportsForMonth(int year, int month) async {
+    final db = await _dbHelper.database;
+    final startDate = '$year-${month.toString().padLeft(2, '0')}-01';
+    final endDay = DateTime(year, month + 1, 0).day;
+    final endDate = '$year-${month.toString().padLeft(2, '0')}-${endDay.toString().padLeft(2, '0')}';
+    
+    final List<Map<String, dynamic>> maps = await db.query(
+      'daily_reports',
+      where: 'date >= ? AND date <= ?',
+      whereArgs: [startDate, endDate],
+      orderBy: 'date ASC',
+    );
+
+    return maps.map((m) => DailyReport.fromMap(m)).toList();
+  }
 }

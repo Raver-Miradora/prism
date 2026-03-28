@@ -5,8 +5,12 @@ import 'package:intl/intl.dart';
 
 import '../core/theme/civic_horizon_theme.dart';
 import '../controllers/yap_journal_controller.dart';
+import '../controllers/settings_controller.dart';
 import '../data/models/daily_report.dart';
+import '../data/repositories/daily_report_repository.dart';
+import '../services/pdf_service.dart';
 import 'widgets/prism_drawer.dart';
+import 'widgets/profile_avatar.dart';
 
 class YapToReportJournal extends ConsumerStatefulWidget {
   const YapToReportJournal({super.key});
@@ -90,6 +94,8 @@ class _YapToReportJournalState extends ConsumerState<YapToReportJournal> {
                     _buildGenerateButton(isLoading),
                     const SizedBox(height: 32),
                     _buildFormalOutputCard(activeReport, isLoading),
+                    const SizedBox(height: 24),
+                    _buildExportMonthlyButton(journalState.selectedDate),
                     const SizedBox(height: 80), // Padding
                   ],
                 ),
@@ -162,20 +168,7 @@ class _YapToReportJournalState extends ConsumerState<YapToReportJournal> {
                 ],
               ),
               const SizedBox(width: 16),
-              Container(
-                height: 40,
-                width: 40,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: CivicHorizonTheme.outlineVariant.withAlpha(50), width: 1),
-                  color: CivicHorizonTheme.primaryContainer,
-                  image: const DecorationImage(
-                    image: NetworkImage('https://placeholder.com/user_avatar'), // Fallback placeholder
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                child: const Icon(Icons.person, color: Colors.white, size: 20),
-              ),
+              const ProfileAvatar(size: 40),
             ],
           ),
         ],
@@ -474,6 +467,37 @@ class _YapToReportJournalState extends ConsumerState<YapToReportJournal> {
         const SizedBox(height: 12),
         Container(height: 16, width: 300, decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(4))),
       ],
+    );
+  }
+  Widget _buildExportMonthlyButton(DateTime selectedDate) {
+    return Center(
+      child: OutlinedButton.icon(
+        onPressed: () async {
+          final repo = DailyReportRepository();
+          final reports = await repo.getReportsForMonth(selectedDate.year, selectedDate.month);
+          final settingsState = ref.read(settingsProvider);
+          final profile = settingsState.profile;
+          if (profile == null) return;
+
+          await PdfService.generateAndPrintMonthlyReport(
+            reports,
+            profile,
+            selectedDate.year,
+            selectedDate.month,
+          );
+        },
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
+          side: const BorderSide(color: CivicHorizonTheme.primary, width: 2),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          foregroundColor: CivicHorizonTheme.primary,
+        ),
+        icon: const Icon(Icons.picture_as_pdf),
+        label: Text(
+          'Export Monthly Report (${DateFormat('MMMM').format(selectedDate)})',
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+        ),
+      ),
     );
   }
 }

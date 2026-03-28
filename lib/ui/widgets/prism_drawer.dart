@@ -15,11 +15,44 @@ class PrismDrawer extends ConsumerWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('About PRISM', style: TextStyle(fontWeight: FontWeight.bold, color: CivicHorizonTheme.primary)),
-        content: const Text(
-          'PRISM (Program Registry for Intern and Student Management) is an offline-first '
-          'timeclock and reporting system strictly designed for government internship monitoring '
-          'compliance. It calculates your CSC DTR Form 48 metrics directly on-device.',
-          style: TextStyle(height: 1.5),
+        content: const SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('What is PRISM?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              SizedBox(height: 8),
+              Text(
+                'PRISM (Program Registry for Intern and Student Management) is a secure, offline-first '
+                'companion app built exclusively for government interns, SPES beneficiaries, GIPs, and '
+                'Immersion students.',
+                style: TextStyle(height: 1.5),
+              ),
+              SizedBox(height: 16),
+              Text('Our Mission', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              SizedBox(height: 8),
+              Text(
+                'We believe public service training should focus on skill-building, not tedious paperwork. '
+                'PRISM automates the administrative burden of local government internships. By seamlessly '
+                'tracking attendance and utilizing AI to draft Civil Service Commission (CSC) compliant '
+                'accomplishment reports, PRISM empowers students to take control of their training experience.',
+                style: TextStyle(height: 1.5),
+              ),
+              SizedBox(height: 16),
+              Text('About the Developer', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              SizedBox(height: 8),
+              Text(
+                'PRISM was engineered by Raver B. Miradora, a graduating BS Information Technology student at '
+                'Partido State University. The architecture for this system was built directly from frontline '
+                'experience, observing real-world administrative bottlenecks while interning at the Local '
+                'Government Unit of Lagonoy under the HRMO and PESO.\n\n'
+                'Combining local government workflow knowledge with cross-platform mobile development, '
+                'Raver\u2014a Career Service Professional eligible and aspiring Associate AI Engineer designed '
+                'PRISM to bridge the gap between traditional government requirements and modern, AI-driven technology.',
+                style: TextStyle(height: 1.5),
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
@@ -63,7 +96,11 @@ class PrismDrawer extends ConsumerWidget {
               Text('Q: Can I edit my past logs?', style: TextStyle(fontWeight: FontWeight.bold)),
               Text('A: You must submit a Journal correction request. Direct database modification is locked to preserve integrity.\n'),
               Text('Q: Does PRISM require internet?', style: TextStyle(fontWeight: FontWeight.bold)),
-              Text('A: No. PRISM is an offline-first architecture. It syncs locally using SQLite.'),
+              Text('A: No. PRISM is an offline-first architecture. It syncs locally using SQLite.\n'),
+              Text('Q: How is the formal report generated?', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text('A: PRISM uses a built-in AI engine that transforms your informal daily notes into a CSC-compliant formal report.\n'),
+              Text('Q: Can I export my reports?', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text('A: Yes. You can assemble a DTR PDF from the Reports tab, or export monthly formal reports from the Journal section.'),
             ],
           ),
         ),
@@ -92,7 +129,7 @@ class PrismDrawer extends ConsumerWidget {
             ),
             ListTile(
               leading: const Icon(Icons.facebook, color: CivicHorizonTheme.primary),
-              title: const Text('Rave Miradora', style: TextStyle(fontSize: 13, decoration: TextDecoration.underline, color: CivicHorizonTheme.primary)),
+              title: const Text('Raver Miradora', style: TextStyle(fontSize: 13, decoration: TextDecoration.underline, color: CivicHorizonTheme.primary)),
               onTap: () => launchUrl(Uri.parse('https://www.facebook.com/ra.ve.52687506')),
             ),
           ],

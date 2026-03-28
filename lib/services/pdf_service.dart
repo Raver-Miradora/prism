@@ -7,9 +7,82 @@ import 'package:intl/intl.dart';
 import '../data/models/time_log.dart';
 import '../data/models/intern_profile.dart';
 import '../data/models/intern_settings.dart';
+import '../data/models/daily_report.dart';
 import '../core/utils/hourglass_engine.dart';
 
 class PdfService {
+  /// Opens the native Share/Print dialog exposing the dynamically generated Monthly Report
+  static Future<void> generateAndPrintMonthlyReport(
+    List<DailyReport> reports,
+    InternProfile profile,
+    int year,
+    int month,
+  ) async {
+    final pdf = pw.Document();
+    final monthName = DateFormat('MMMM yyyy').format(DateTime(year, month));
+
+    // Filter only reports that have formal text
+    final formalReports = reports.where((r) => r.formalReport != null && r.formalReport!.isNotEmpty).toList();
+
+    pdf.addPage(
+      pw.MultiPage(
+        build: (pw.Context context) {
+          return [
+            pw.Center(
+              child: pw.Text('Monthly Accomplishment Report',
+                  style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+            ),
+            pw.SizedBox(height: 4),
+            pw.Center(child: pw.Text(monthName, style: const pw.TextStyle(fontSize: 14))),
+            pw.SizedBox(height: 16),
+            pw.Text('Intern: ${profile.name.isEmpty ? "(Name)" : profile.name}',
+                style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
+            pw.Text('Agency: ${profile.agencyOffice.isEmpty ? "(Agency)" : profile.agencyOffice}',
+                style: const pw.TextStyle(fontSize: 10)),
+            pw.SizedBox(height: 20),
+            if (formalReports.isEmpty)
+              pw.Text('No formal reports generated for this month.', style: const pw.TextStyle(fontSize: 11))
+            else
+              ...formalReports.map((r) {
+                final dateLabel = DateFormat('MMMM d, yyyy').format(DateTime.parse(r.date));
+                return pw.Container(
+                  margin: const pw.EdgeInsets.only(bottom: 16),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text(dateLabel, style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+                      pw.SizedBox(height: 4),
+                      pw.Text(r.formalReport!, style: const pw.TextStyle(fontSize: 10, lineSpacing: 4)),
+                      pw.Divider(),
+                    ],
+                  ),
+                );
+              }),
+            pw.SizedBox(height: 24),
+            pw.Text(
+              'I certify on my honor that the above is a true and correct report of the activities performed.',
+              style: const pw.TextStyle(fontSize: 9),
+              textAlign: pw.TextAlign.justify,
+            ),
+            pw.SizedBox(height: 32),
+            pw.Container(
+              width: 150,
+              decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide())),
+            ),
+            pw.SizedBox(height: 4),
+            pw.Text(profile.name.isEmpty ? '(Intern Signature)' : profile.name.toUpperCase(),
+                style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+          ];
+        },
+      ),
+    );
+
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => pdf.save(),
+      name: 'Monthly_Report_${profile.name.replaceAll(" ", "_")}_${month}_$year',
+    );
+  }
+
   /// Opens the native Share/Print dialog exposing the dynamically generated Form 48
   static Future<void> generateAndPrintForm48(
     List<TimeLog> logs, 

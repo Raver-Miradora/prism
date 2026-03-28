@@ -6,6 +6,8 @@ import '../core/theme/civic_horizon_theme.dart';
 import '../controllers/reports_controller.dart';
 import '../core/utils/hourglass_engine.dart';
 import 'widgets/prism_drawer.dart';
+import 'widgets/profile_avatar.dart';
+import 'main_shell.dart';
 
 class ReportsForm48 extends ConsumerWidget {
   const ReportsForm48({super.key});
@@ -34,7 +36,7 @@ class ReportsForm48 extends ConsumerWidget {
                     const SizedBox(height: 32),
                     _buildAssembleButton(state, notifier),
                     const SizedBox(height: 32),
-                    _buildSecondaryInsights(state, notifier),
+                    _buildSecondaryInsights(state, notifier, ref),
                     const SizedBox(height: 80),
                   ],
                 ),
@@ -82,19 +84,7 @@ class ReportsForm48 extends ConsumerWidget {
               ),
             ],
           ),
-          Container(
-            height: 40,
-            width: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: CivicHorizonTheme.outlineVariant.withAlpha(51), width: 1),
-              color: CivicHorizonTheme.surfaceContainerHighest,
-              image: const DecorationImage(
-                image: NetworkImage('https://lh3.googleusercontent.com/aida-public/AB6AXuBGk-Fvgr3zIM0ERXwAtXf_Vk068kgBaBt_9_UtIxdKOUjxSGMqDYibLGYEKLMdJPu2UD-SXz0CLZIfAqNeiJZior64yu35DRS41Uzkdk1jUFvdXvXhLXdbBk6rFhScpUllmSO6bXVud3YiU6DEboHnrsgtfJDMu55yZzjJtYgyPaiAWVQgiXlTLS0CFOyyv-4Pb6Y0PpsAAt9U5Y3KU_LGyVnDibeSKOz7vxYo_EyJKkgsQJboQ4rGn1LP9qzKu48tJ9moToMOmc4'),
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
+          const ProfileAvatar(size: 40),
         ],
       ),
     );
@@ -414,7 +404,7 @@ class ReportsForm48 extends ConsumerWidget {
     );
   }
 
-  Widget _buildSecondaryInsights(ReportsState state, ReportsController notifier) {
+  Widget _buildSecondaryInsights(ReportsState state, ReportsController notifier, WidgetRef ref) {
     return Wrap(
       spacing: 16,
       runSpacing: 16,
@@ -480,7 +470,9 @@ class ReportsForm48 extends ConsumerWidget {
               const Text('Submit a Correction Request through Journal.', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, color: CivicHorizonTheme.onSurfaceVariant)),
               const SizedBox(height: 8),
               TextButton(
-                onPressed: () {},
+                onPressed: () {
+                  ref.read(navIndexProvider.notifier).state = 1;
+                },
                 child: const Text('Open Journal', style: TextStyle(fontWeight: FontWeight.bold, color: CivicHorizonTheme.primary)),
               ),
             ],
