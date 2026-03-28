@@ -329,8 +329,8 @@ class ReportsForm48 extends StatelessWidget {
 
   Widget _buildTableRow(String date, String day, String arr, String dep, String lateVal, bool hasError) {
     return Container(
-      decoration: const Border(
-        top: BorderSide(color: CivicHorizonTheme.surfaceContainerHigh),
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: CivicHorizonTheme.surfaceContainerHigh)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Row(
@@ -457,7 +457,7 @@ class ReportsForm48 extends StatelessWidget {
                   height: 60,
                   alignment: Alignment.bottomCenter,
                   padding: const EdgeInsets.only(bottom: 8),
-                  decoration: const Border(bottom: BorderSide(color: CivicHorizonTheme.outlineVariant, style: BorderStyle.solid)), // Flutter doesn't native support dashed easily without package, using solid
+                  decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: CivicHorizonTheme.outlineVariant, style: BorderStyle.solid))), // Flutter doesn't native support dashed easily without package, using solid
                   child: const Text('E-SIGNATURE ON FILE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.0, color: CivicHorizonTheme.onSurfaceVariant)),
                 ),
               ],

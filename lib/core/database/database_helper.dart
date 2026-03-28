@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
-import '../models/time_log.dart';
-import '../models/daily_report.dart';
-import '../models/intern_profile.dart';
-import '../models/intern_settings.dart';
+import '../../data/models/time_log.dart';
+import '../../data/models/daily_report.dart';
+import '../../data/models/intern_profile.dart';
+import '../../data/models/intern_settings.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
