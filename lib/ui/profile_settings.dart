@@ -201,9 +201,9 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
               ),
             ],
           ),
-          GestureDetector(
-            onTap: () => ref.read(settingsProvider.notifier).pickImage(),
-            child: const ProfileAvatar(size: 44),
+          ProfileAvatar(
+            size: 44,
+            onTapOverride: () => ref.read(settingsProvider.notifier).pickImage(),
           ),
         ],
       ),

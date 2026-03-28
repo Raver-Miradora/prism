@@ -90,7 +90,7 @@ class DashboardTimeclock extends ConsumerWidget {
               ),
             ],
           ),
-          const ProfileAvatar(size: 32),
+          const ProfileAvatar(size: 40),
         ],
       ),
     );
