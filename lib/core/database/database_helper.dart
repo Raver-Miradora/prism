@@ -24,9 +24,20 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _createDB,
+      onUpgrade: _upgradeDB,
     );
+  }
+
+  Future _upgradeDB(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      try {
+        await db.execute('ALTER TABLE intern_profile ADD COLUMN profile_image_path TEXT');
+      } catch (e) {
+        // Ignore if column already exists
+      }
+    }
   }
 
   Future _createDB(Database db, int version) async {
@@ -62,7 +73,8 @@ class DatabaseHelper {
       CREATE TABLE intern_profile (
         name TEXT NOT NULL,
         agency_office TEXT NOT NULL,
-        supervisor_name TEXT NOT NULL
+        supervisor_name TEXT NOT NULL,
+        profile_image_path TEXT
       )
     ''');
 

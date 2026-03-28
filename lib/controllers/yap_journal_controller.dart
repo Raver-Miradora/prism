@@ -80,16 +80,20 @@ class YapJournalController extends StateNotifier<YapJournalState> {
   /// Pass the current notes through the AI engine to generate the Formal text
   Future<void> generateFormalReport(String rawNotes) async {
     // Lock the UI into loading visually
+    final dateStr = DateFormat('yyyy-MM-dd').format(state.selectedDate);
+    final previousData = state.reportStatus.valueOrNull;
+
+    // Use AsyncValue data but with isRefreshing or just raw AsyncLoading
     state = state.copyWith(reportStatus: const AsyncValue.loading());
 
     try {
       final formalText = await _aiService.synthesizeReport(rawNotes);
       
-      final currentReport = state.reportStatus.valueOrNull;
-      final dateStr = DateFormat('yyyy-MM-dd').format(state.selectedDate);
+      // Grab from repo directly to avoid race conditions with loading state
+      final currentReport = await _repo.getReportByDate(dateStr);
       
       final updatedReport = DailyReport(
-        id: currentReport?.id,
+        id: currentReport?.id ?? previousData?.id,
         date: dateStr,
         rawNotes: rawNotes,
         formalReport: formalText, // Override with the newly generated Formal string!

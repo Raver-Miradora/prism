@@ -21,12 +21,15 @@ class DailyReport {
   }
 
   Map<String, dynamic> toMap() {
-    return {
-      'id': id,
+    final map = <String, dynamic>{
       'date': date,
       'raw_notes': rawNotes,
       'formal_report': formalReport,
     };
+    if (id != null) {
+      map['id'] = id;
+    }
+    return map;
   }
 
   DailyReport copyWith({

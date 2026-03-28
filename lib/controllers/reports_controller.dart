@@ -79,6 +79,14 @@ class ReportsController extends StateNotifier<ReportsState> {
     }
   }
 
+  Future<void> updateProfileName(String newName) async {
+    final profile = state.profileStatus.valueOrNull;
+    if (profile == null) return;
+    final newProfile = profile.copyWith(name: newName);
+    await _profileRepo.saveProfile(newProfile);
+    state = state.copyWith(profileStatus: AsyncValue.data(newProfile));
+  }
+
   Future<void> changeMonth(int offset) async {
     var d = DateTime(state.selectedYear, state.selectedMonth + offset, 1);
     await loadData(d.year, d.month);

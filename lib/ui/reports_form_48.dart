@@ -30,11 +30,11 @@ class ReportsForm48 extends ConsumerWidget {
                   children: [
                     _buildReportHeader(state, notifier),
                     const SizedBox(height: 32),
-                    _buildAssembleButton(state, notifier),
-                    const SizedBox(height: 32),
                     _buildTimesheetLedger(state),
                     const SizedBox(height: 32),
-                    _buildSecondaryInsights(state),
+                    _buildAssembleButton(state, notifier),
+                    const SizedBox(height: 32),
+                    _buildSecondaryInsights(state, notifier),
                     const SizedBox(height: 80),
                   ],
                 ),
@@ -110,17 +110,7 @@ class ReportsForm48 extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: const [
             Text(
-              'CIVIL SERVICE COMMISSION',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 1.5,
-                color: CivicHorizonTheme.onSurfaceVariant,
-              ),
-            ),
-            SizedBox(height: 4),
-            Text(
-              'Form 48 Generator',
+              'DTR Generator',
               style: TextStyle(
                 fontFamily: 'Public Sans',
                 fontSize: 28,
@@ -208,7 +198,7 @@ class ReportsForm48 extends ConsumerWidget {
               const Icon(Icons.picture_as_pdf, color: Colors.white),
             const SizedBox(width: 12),
             Text(
-              isLoading ? 'Rendering PDF...' : 'Assemble CSC Form 48 PDF',
+              isLoading ? 'Rendering PDF...' : 'Assemble DTR PDF',
               style: const TextStyle(
                 fontFamily: 'Public Sans',
                 fontSize: 16,
@@ -315,12 +305,6 @@ class ReportsForm48 extends ConsumerWidget {
                     _buildLedgerStat('Total Tardy', '$totalLateMins mins'),
                     const SizedBox(width: 32),
                     _buildLedgerStat('Total Undertime', '${totalUndertimeMins} mins'),
-                  ],
-                ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildFooterButton(Icons.ios_share, 'Export to CSC PDF', isPrimary: true),
                   ],
                 ),
               ],
@@ -430,76 +414,76 @@ class ReportsForm48 extends ConsumerWidget {
     );
   }
 
-  Widget _buildSecondaryInsights(ReportsState state) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildSecondaryInsights(ReportsState state, ReportsController notifier) {
+    return Wrap(
+      spacing: 16,
+      runSpacing: 16,
       children: [
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: CivicHorizonTheme.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: CivicHorizonTheme.outlineVariant.withAlpha(12)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: const [
-                    Icon(Icons.verified, color: CivicHorizonTheme.primaryContainer, size: 18),
-                    SizedBox(width: 8),
-                    Text('Certification Status', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: CivicHorizonTheme.primaryContainer)),
-                  ],
+        Container(
+          width: 380, // Constrain width instead of Expanded
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: CivicHorizonTheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: CivicHorizonTheme.outlineVariant.withAlpha(12)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: const [
+                  Icon(Icons.verified, color: CivicHorizonTheme.primaryContainer, size: 18),
+                  SizedBox(width: 8),
+                  Text('Certification Status', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: CivicHorizonTheme.primaryContainer)),
+                ],
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'I certify on my honor that the above is a true and correct report of the hours of work performed...',
+                style: TextStyle(fontSize: 12, color: CivicHorizonTheme.onSurfaceVariant, height: 1.5),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                initialValue: state.profileStatus.valueOrNull?.name ?? '',
+                onFieldSubmitted: (val) => notifier.updateProfileName(val),
+                decoration: const InputDecoration(
+                  hintText: 'Enter E-Signature Name...',
+                  hintStyle: TextStyle(fontSize: 10, letterSpacing: 1.0),
+                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: CivicHorizonTheme.outlineVariant)),
+                  focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: CivicHorizonTheme.primary, width: 2)),
                 ),
-                const SizedBox(height: 16),
-                const Text(
-                  'I certify on my honor that the above is a true and correct report of the hours of work performed...',
-                  style: TextStyle(fontSize: 12, color: CivicHorizonTheme.onSurfaceVariant, height: 1.5),
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  height: 60,
-                  alignment: Alignment.bottomCenter,
-                  padding: const EdgeInsets.only(bottom: 8),
-                  decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: CivicHorizonTheme.outlineVariant, style: BorderStyle.solid))),
-                  child: Text(
-                    state.profileStatus.valueOrNull?.name.toUpperCase() ?? 'E-SIGNATURE ON FILE',
-                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.0, color: CivicHorizonTheme.primary),
-                  ),
-                ),
-              ],
-            ),
+                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.0, color: CivicHorizonTheme.primary),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
         ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: CivicHorizonTheme.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: CivicHorizonTheme.outlineVariant.withAlpha(12)),
-            ),
-            child: Column(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(color: CivicHorizonTheme.primaryContainer.withAlpha(25), shape: BoxShape.circle),
-                  child: const Icon(Icons.info, color: CivicHorizonTheme.primaryContainer),
-                ),
-                const SizedBox(height: 12),
-                const Text('Need Adjustments?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                const SizedBox(height: 8),
-                const Text('Submit a Correction Request through Journal.', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, color: CivicHorizonTheme.onSurfaceVariant)),
-                const SizedBox(height: 8),
-                TextButton(
-                  onPressed: () {},
-                  child: const Text('Open Journal', style: TextStyle(fontWeight: FontWeight.bold, color: CivicHorizonTheme.primary)),
-                ),
-              ],
-            ),
+        Container(
+          width: 380, // Constrain width instead of Expanded
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: CivicHorizonTheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: CivicHorizonTheme.outlineVariant.withAlpha(12)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(color: CivicHorizonTheme.primaryContainer.withAlpha(25), shape: BoxShape.circle),
+                child: const Icon(Icons.info, color: CivicHorizonTheme.primaryContainer),
+              ),
+              const SizedBox(height: 12),
+              const Text('Need Adjustments?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              const SizedBox(height: 8),
+              const Text('Submit a Correction Request through Journal.', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, color: CivicHorizonTheme.onSurfaceVariant)),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () {},
+                child: const Text('Open Journal', style: TextStyle(fontWeight: FontWeight.bold, color: CivicHorizonTheme.primary)),
+              ),
+            ],
           ),
         ),
       ],

@@ -1,34 +1,156 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
-import '../core/theme/civic_horizon_theme.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 
-class ProfileSettings extends StatelessWidget {
+import '../core/theme/civic_horizon_theme.dart';
+import '../core/database/database_helper.dart';
+import '../controllers/settings_controller.dart';
+import 'widgets/prism_drawer.dart';
+
+class ProfileSettings extends ConsumerStatefulWidget {
   const ProfileSettings({super.key});
 
   @override
+  ConsumerState<ProfileSettings> createState() => _ProfileSettingsState();
+}
+
+class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
+  late TextEditingController _nameController;
+  late TextEditingController _agencyController;
+  late TextEditingController _supervisorController;
+  late TextEditingController _hoursController;
+  late TextEditingController _timeInController;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController();
+    _agencyController = TextEditingController();
+    _supervisorController = TextEditingController();
+    _hoursController = TextEditingController();
+    _timeInController = TextEditingController();
+    
+    // Defer initialization to after layout to read from Riverpod state
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final state = ref.read(settingsProvider);
+      if (state.profile != null) {
+        _nameController.text = state.profile!.name;
+        _agencyController.text = state.profile!.agencyOffice;
+        _supervisorController.text = state.profile!.supervisorName;
+      }
+      if (state.settings != null) {
+        _hoursController.text = state.settings!.targetHours.toString();
+        _timeInController.text = state.settings!.expectedTimeIn;
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _agencyController.dispose();
+    _supervisorController.dispose();
+    _hoursController.dispose();
+    _timeInController.dispose();
+    super.dispose();
+  }
+
+  void _commitChanges() {
+    FocusScope.of(context).unfocus();
+    ref.read(settingsProvider.notifier).saveSettings(
+      name: _nameController.text,
+      agency: _agencyController.text,
+      supervisor: _supervisorController.text,
+      targetHours: int.tryParse(_hoursController.text) ?? 486,
+      timeIn: _timeInController.text,
+    );
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Settings successfully saved to registry.'), backgroundColor: CivicHorizonTheme.primary),
+    );
+  }
+
+  Future<void> _backupDatabase() async {
+    try {
+      final dbFolder = await getDatabasesPath();
+      final File sourceFile = File(p.join(dbFolder, 'prism.db'));
+      
+      final docDir = await getApplicationDocumentsDirectory();
+      final backupDir = Directory(p.join(docDir.path, 'PRISM_Backups'));
+      if (!await backupDir.exists()) await backupDir.create();
+      
+      final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-').split('.').first;
+      final backupFile = File(p.join(backupDir.path, 'prism_backup_$timestamp.db'));
+      
+      await sourceFile.copy(backupFile.path);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Backup successful: ${backupFile.path}'), backgroundColor: Colors.green));
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Backup failed: $e'), backgroundColor: Colors.red));
+    }
+  }
+
+  Future<void> _restoreDatabase() async {
+    try {
+      final docDir = await getApplicationDocumentsDirectory();
+      final backupDir = Directory(p.join(docDir.path, 'PRISM_Backups'));
+      if (!await backupDir.exists()) {
+        throw Exception("No backups found");
+      }
+      
+      final List<FileSystemEntity> files = backupDir.listSync().where((f) => f.path.endsWith('.db')).toList();
+      if (files.isEmpty) throw Exception("No backups found");
+      
+      files.sort((a, b) => b.statSync().modified.compareTo(a.statSync().modified));
+      final latestBackup = File(files.first.path);
+      
+      final dbFolder = await getDatabasesPath();
+      final targetFile = File(p.join(dbFolder, 'prism.db'));
+      
+      // Close active DB, overwrite, the app needs restart ideally but we'll try raw copy
+      await DatabaseHelper.instance.close();
+      await latestBackup.copy(targetFile.path);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Restore successful! Restart app to apply.'), backgroundColor: Colors.orange));
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Restore failed: $e'), backgroundColor: Colors.red));
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final state = ref.watch(settingsProvider);
+
     return Scaffold(
       backgroundColor: CivicHorizonTheme.background,
+      drawer: const PrismDrawer(),
       body: SafeArea(
         child: Column(
           children: [
-            _buildTopAppBar(),
+            _buildTopAppBar(state),
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _buildEditorialHeader(),
-                    const SizedBox(height: 32),
-                    _buildProfileInformation(),
-                    const SizedBox(height: 32),
-                    _buildDataManagement(),
-                    const SizedBox(height: 32),
-                    _buildCommitChangesButton(),
-                    const SizedBox(height: 80),
-                  ],
-                ),
-              ),
+              child: state.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildEditorialHeader(),
+                        const SizedBox(height: 32),
+                        _buildProfileInformation(),
+                        const SizedBox(height: 32),
+                        _buildDataManagement(),
+                        const SizedBox(height: 32),
+                        _buildCommitChangesButton(),
+                        const SizedBox(height: 80),
+                      ],
+                    ),
+                  ),
             ),
           ],
         ),
@@ -36,14 +158,16 @@ class ProfileSettings extends StatelessWidget {
     );
   }
 
-  Widget _buildTopAppBar() {
+  Widget _buildTopAppBar(SettingsState state) {
+    final hasImage = state.profile?.profileImagePath != null && state.profile!.profileImagePath!.isNotEmpty;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       decoration: BoxDecoration(
-        color: CivicHorizonTheme.surface.withOpacity(0.85),
+        color: CivicHorizonTheme.surface.withAlpha(216),
         border: Border(
           bottom: BorderSide(
-            color: CivicHorizonTheme.surfaceContainerHigh.withOpacity(0.5),
+            color: CivicHorizonTheme.surfaceContainerHigh.withAlpha(127),
             width: 1,
           ),
         ),
@@ -53,9 +177,11 @@ class ProfileSettings extends StatelessWidget {
         children: [
           Row(
             children: [
-              IconButton(
-                icon: const Icon(Icons.menu, color: CivicHorizonTheme.primary),
-                onPressed: () {},
+              Builder(
+                builder: (ctx) => IconButton(
+                  icon: const Icon(Icons.menu, color: CivicHorizonTheme.primary),
+                  onPressed: () => Scaffold.of(ctx).openDrawer(),
+                ),
               ),
               const SizedBox(width: 8),
               const Text(
@@ -70,16 +196,26 @@ class ProfileSettings extends StatelessWidget {
               ),
             ],
           ),
-          Container(
-            height: 40,
-            width: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: CivicHorizonTheme.primary.withOpacity(0.1), width: 2),
-              image: const DecorationImage(
-                image: NetworkImage('https://lh3.googleusercontent.com/aida-public/AB6AXuCeM6aIav-nn7Zz0BgE-xsOhebnAAq67qlz8-GZxxEEEHBnIJu1kDVjqnq2ffBz0x3YA2XoV1TK_5C7FBZKQqPHWrDEd3uk9zAS2shD4cGZeap5zhQVZKIoYhL_JtMuYlrfRNU9HGwAPWxrIl-9rt26gAS3y9t4kQVWGdkq1i0zf4LIdwKc61n8WGwlQrFojVo7NjU-k4FQNhCqQp21DmRC02toeE52aWIBwaggd_W_IMIbAgAXD8foPEAnqaVVAcQeP7tbMnrLrGQ'),
-                fit: BoxFit.cover,
+          GestureDetector(
+            onTap: () => ref.read(settingsProvider.notifier).pickImage(),
+            child: Container(
+              height: 44,
+              width: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: CivicHorizonTheme.surfaceContainerHighest,
+                border: Border.all(color: CivicHorizonTheme.primary.withAlpha(51), width: 2),
+                image: hasImage
+                    ? DecorationImage(
+                        image: FileImage(File(state.profile!.profileImagePath!)),
+                        fit: BoxFit.cover,
+                      )
+                    : const DecorationImage(
+                        image: NetworkImage('https://lh3.googleusercontent.com/aida-public/AB6AXuBGk-Fvgr3zIM0ERXwAtXf_Vk068kgBaBt_9_UtIxdKOUjxSGMqDYibLGYEKLMdJPu2UD-SXz0CLZIfAqNeiJZior64yu35DRS41Uzkdk1jUFvdXvXhLXdbBk6rFhScpUllmSO6bXVud3YiU6DEboHnrsgtfJDMu55yZzjJtYgyPaiAWVQgiXlTLS0CFOyyv-4Pb6Y0PpsAAt9U5Y3KU_LGyVnDibeSKOz7vxYo_EyJKkgsQJboQ4rGn1LP9qzKu48tJ9moToMOmc4'),
+                        fit: BoxFit.cover,
+                      ),
               ),
+              child: hasImage ? null : const Icon(Icons.add_a_photo, size: 16, color: Colors.white70),
             ),
           ),
         ],
@@ -125,27 +261,35 @@ class ProfileSettings extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildTextInput('INTERN FULL NAME', 'Alexander Thorne'),
+          _buildTextInput('INTERN FULL NAME', _nameController),
           const SizedBox(height: 24),
-          Row(
+          // Fix right overflow by utilizing a Wrap instead of Row with Expandeds for potentially narrow mobile screens
+          Wrap(
+            spacing: 24,
+            runSpacing: 24,
             children: [
-              Expanded(child: _buildTextInput('GOVERNMENT AGENCY/OFFICE', 'Department of Information Technology')),
-              const SizedBox(width: 24),
-              Expanded(child: _buildTextInput('SUPERVISOR NAME', 'Dr. Elena Rodriguez')),
+              SizedBox(width: 320, child: _buildTextInput('GOVERNMENT AGENCY/OFFICE', _agencyController)),
+              SizedBox(width: 320, child: _buildTextInput('SUPERVISOR NAME', _supervisorController)),
             ],
           ),
           const SizedBox(height: 32),
-          _buildNumericInput('TOTAL TARGET HOURS', '486', Icons.schedule),
-          const SizedBox(height: 24),
-          _buildNumericInput('EXPECTED TIME IN', '08:00 AM', Icons.alarm),
+          Wrap(
+            spacing: 24,
+            runSpacing: 24,
+            children: [
+              SizedBox(width: 320, child: _buildNumericInput('TOTAL TARGET HOURS', _hoursController, Icons.schedule)),
+              SizedBox(width: 320, child: _buildNumericInput('EXPECTED TIME IN', _timeInController, Icons.alarm)),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildTextInput(String label, String initialValue) {
+  Widget _buildTextInput(String label, TextEditingController controller) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           label,
@@ -158,7 +302,7 @@ class ProfileSettings extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         TextFormField(
-          initialValue: initialValue,
+          controller: controller,
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
@@ -177,9 +321,10 @@ class ProfileSettings extends StatelessWidget {
     );
   }
 
-  Widget _buildNumericInput(String label, String initialValue, IconData icon) {
+  Widget _buildNumericInput(String label, TextEditingController controller, IconData icon) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           label,
@@ -192,7 +337,7 @@ class ProfileSettings extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         TextFormField(
-          initialValue: initialValue,
+          controller: controller,
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -232,7 +377,7 @@ class ProfileSettings extends StatelessWidget {
       decoration: BoxDecoration(
         color: CivicHorizonTheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: CivicHorizonTheme.outlineVariant.withOpacity(0.1)),
+        border: Border.all(color: CivicHorizonTheme.outlineVariant.withAlpha(25)),
         boxShadow: const [
           BoxShadow(
             color: Color(0x05000000),
@@ -249,42 +394,46 @@ class ProfileSettings extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: CivicHorizonTheme.primary.withOpacity(0.05),
+                  color: CivicHorizonTheme.primary.withAlpha(12),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(Icons.storage, color: CivicHorizonTheme.primary),
               ),
               const SizedBox(width: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text(
-                    'Data Management',
-                    style: TextStyle(
-                      fontFamily: 'Public Sans',
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: CivicHorizonTheme.primary,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Text(
+                      'Data Management',
+                      style: TextStyle(
+                        fontFamily: 'Public Sans',
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: CivicHorizonTheme.primary,
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    'System-wide backup and recovery protocols',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: CivicHorizonTheme.onSurfaceVariant,
+                    SizedBox(height: 4),
+                    Text(
+                      'System-wide backup and recovery protocols',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: CivicHorizonTheme.onSurfaceVariant,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
           const SizedBox(height: 24),
-          Row(
+          // Fix Right Overflow: Stack buttons or wrap them
+          Wrap(
+            spacing: 16,
+            runSpacing: 16,
             children: [
-              Expanded(child: _buildDataButton(Icons.cloud_upload, 'Backup Database')),
-              const SizedBox(width: 16),
-              Expanded(child: _buildDataButton(Icons.settings_backup_restore, 'Restore Database')),
+              _buildDataButton(Icons.cloud_upload, 'Backup Database', onTap: _backupDatabase),
+              _buildDataButton(Icons.settings_backup_restore, 'Restore Database', onTap: _restoreDatabase),
             ],
           ),
         ],
@@ -292,11 +441,11 @@ class ProfileSettings extends StatelessWidget {
     );
   }
 
-  Widget _buildDataButton(IconData icon, String label) {
+  Widget _buildDataButton(IconData icon, String label, {required VoidCallback onTap}) {
     return OutlinedButton.icon(
-      onPressed: () {},
+      onPressed: onTap,
       style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 20),
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
         side: const BorderSide(color: CivicHorizonTheme.outlineVariant, width: 2),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         foregroundColor: CivicHorizonTheme.onSurfaceVariant,
@@ -313,13 +462,13 @@ class ProfileSettings extends StatelessWidget {
     return Align(
       alignment: Alignment.centerRight,
       child: ElevatedButton(
-        onPressed: () {},
+        onPressed: _commitChanges,
         style: ElevatedButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
           backgroundColor: CivicHorizonTheme.primary,
           foregroundColor: Colors.white,
           elevation: 8,
-          shadowColor: CivicHorizonTheme.primary.withOpacity(0.5),
+          shadowColor: CivicHorizonTheme.primary.withAlpha(127),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
         child: const Text(
@@ -330,65 +479,6 @@ class ProfileSettings extends StatelessWidget {
             letterSpacing: 2.0,
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildBottomNavBar() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.95),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0D000000),
-            blurRadius: 20,
-            offset: Offset(0, -4),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(Icons.home, 'Home'),
-              _buildNavItem(Icons.edit_note, 'Journal'),
-              _buildNavItem(Icons.analytics, 'Reports'),
-              _buildNavItem(Icons.settings, 'Settings', isActive: true),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem(IconData icon, String label, {bool isActive = false}) {
-    final color = isActive ? CivicHorizonTheme.primary : const Color(0xFF94A3B8);
-    final bgColor = isActive ? CivicHorizonTheme.primary.withOpacity(0.1) : Colors.transparent;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 4),
-          Text(
-            label.toUpperCase(),
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
-              color: color,
-            ),
-          ),
-        ],
       ),
     );
   }
