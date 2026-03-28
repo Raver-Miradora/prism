@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../core/theme/civic_horizon_theme.dart';
 import '../controllers/yap_journal_controller.dart';
 import '../data/models/daily_report.dart';
+import 'widgets/prism_drawer.dart';
 
 class YapToReportJournal extends ConsumerStatefulWidget {
   const YapToReportJournal({super.key});
@@ -71,6 +72,7 @@ class _YapToReportJournalState extends ConsumerState<YapToReportJournal> {
 
     return Scaffold(
       backgroundColor: CivicHorizonTheme.background,
+      drawer: const PrismDrawer(),
       body: SafeArea(
         child: Column(
           children: [
@@ -116,9 +118,11 @@ class _YapToReportJournalState extends ConsumerState<YapToReportJournal> {
         children: [
           Row(
             children: [
-              IconButton(
-                icon: const Icon(Icons.menu, color: CivicHorizonTheme.primary),
-                onPressed: () {}, // Future drawer trigger
+              Builder(
+                builder: (ctx) => IconButton(
+                  icon: const Icon(Icons.menu, color: CivicHorizonTheme.primary),
+                  onPressed: () => Scaffold.of(ctx).openDrawer(),
+                ),
               ),
               const SizedBox(width: 8),
               const Text(
