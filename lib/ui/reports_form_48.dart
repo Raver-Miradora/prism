@@ -1,13 +1,23 @@
 import 'package:flutter/material.dart';
-import '../core/theme/civic_horizon_theme.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
-class ReportsForm48 extends StatelessWidget {
+import '../core/theme/civic_horizon_theme.dart';
+import '../controllers/reports_controller.dart';
+import '../core/utils/hourglass_engine.dart';
+import 'widgets/prism_drawer.dart';
+
+class ReportsForm48 extends ConsumerWidget {
   const ReportsForm48({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(reportsControllerProvider);
+    final notifier = ref.read(reportsControllerProvider.notifier);
+
     return Scaffold(
       backgroundColor: CivicHorizonTheme.background,
+      drawer: const PrismDrawer(),
       body: SafeArea(
         child: Column(
           children: [
@@ -18,14 +28,14 @@ class ReportsForm48 extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _buildReportHeader(),
+                    _buildReportHeader(state, notifier),
                     const SizedBox(height: 32),
-                    _buildAssembleButton(),
+                    _buildAssembleButton(state, notifier),
                     const SizedBox(height: 32),
-                    _buildTimesheetLedger(),
+                    _buildTimesheetLedger(state),
                     const SizedBox(height: 32),
-                    _buildSecondaryInsights(),
-                    const SizedBox(height: 80), // Padding for bottom nav
+                    _buildSecondaryInsights(state),
+                    const SizedBox(height: 80),
                   ],
                 ),
               ),
@@ -40,10 +50,10 @@ class ReportsForm48 extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       decoration: BoxDecoration(
-        color: CivicHorizonTheme.surface.withOpacity(0.85),
+        color: CivicHorizonTheme.surface.withAlpha(216),
         border: Border(
           bottom: BorderSide(
-            color: CivicHorizonTheme.surfaceContainerHigh.withOpacity(0.5),
+            color: CivicHorizonTheme.surfaceContainerHigh.withAlpha(128),
             width: 1,
           ),
         ),
@@ -53,9 +63,11 @@ class ReportsForm48 extends StatelessWidget {
         children: [
           Row(
             children: [
-              IconButton(
-                icon: const Icon(Icons.menu, color: CivicHorizonTheme.primary),
-                onPressed: () {},
+              Builder(
+                builder: (ctx) => IconButton(
+                  icon: const Icon(Icons.menu, color: CivicHorizonTheme.primary),
+                  onPressed: () => Scaffold.of(ctx).openDrawer(),
+                ),
               ),
               const SizedBox(width: 8),
               const Text(
@@ -75,10 +87,10 @@ class ReportsForm48 extends StatelessWidget {
             width: 40,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: CivicHorizonTheme.outlineVariant.withOpacity(0.2), width: 1),
+              border: Border.all(color: CivicHorizonTheme.outlineVariant.withAlpha(51), width: 1),
               color: CivicHorizonTheme.surfaceContainerHighest,
               image: const DecorationImage(
-                image: NetworkImage('https://lh3.googleusercontent.com/aida-public/AB6AXuCez5C_S9mAnYYtK0GNXbCPM70RyQaz_hFxzi-Lu-gIMe8laX8EaTroFihHF1-V8Od5phfOPMOuFZfU4avAXW4JagGZRBGEMZtNHupEo-hH3isC8filaatrMT8XsPxJXudiddj6P9X5eNag0FQq-vurOcawJY9V6uIvWv7T4tTKX92FPr22mDVms1Fczy4xfbGzOtAo6hxBXDA_yKAJadyFQa4MTCAhTj-ay1FDF4AyN6E04iyBBio-QTgfTa4i06-wk90FF6p1Dbo'),
+                image: NetworkImage('https://lh3.googleusercontent.com/aida-public/AB6AXuBGk-Fvgr3zIM0ERXwAtXf_Vk068kgBaBt_9_UtIxdKOUjxSGMqDYibLGYEKLMdJPu2UD-SXz0CLZIfAqNeiJZior64yu35DRS41Uzkdk1jUFvdXvXhLXdbBk6rFhScpUllmSO6bXVud3YiU6DEboHnrsgtfJDMu55yZzjJtYgyPaiAWVQgiXlTLS0CFOyyv-4Pb6Y0PpsAAt9U5Y3KU_LGyVnDibeSKOz7vxYo_EyJKkgsQJboQ4rGn1LP9qzKu48tJ9moToMOmc4'),
                 fit: BoxFit.cover,
               ),
             ),
@@ -88,7 +100,7 @@ class ReportsForm48 extends StatelessWidget {
     );
   }
 
-  Widget _buildReportHeader() {
+  Widget _buildReportHeader(ReportsState state, ReportsController notifier) {
     return Wrap(
       alignment: WrapAlignment.spaceBetween,
       crossAxisAlignment: WrapCrossAlignment.end,
@@ -122,9 +134,18 @@ class ReportsForm48 extends StatelessWidget {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildDropdownFilter('Month', 'November'),
-            const SizedBox(width: 16),
-            _buildDropdownFilter('Year', '2024'),
+            IconButton(
+              icon: const Icon(Icons.chevron_left, color: CivicHorizonTheme.primary),
+              onPressed: () => notifier.changeMonth(-1),
+            ),
+            _buildDropdownFilter(
+              'Period', 
+              DateFormat('MMMM yyyy').format(DateTime(state.selectedYear, state.selectedMonth))
+            ),
+            IconButton(
+              icon: const Icon(Icons.chevron_right, color: CivicHorizonTheme.primary),
+              onPressed: () => notifier.changeMonth(1),
+            ),
           ],
         ),
       ],
@@ -139,11 +160,7 @@ class ReportsForm48 extends StatelessWidget {
           padding: const EdgeInsets.only(left: 4, bottom: 4),
           child: Text(
             label,
-            style: const TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              color: CivicHorizonTheme.onSurfaceVariant,
-            ),
+            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: CivicHorizonTheme.onSurfaceVariant),
           ),
         ),
         Container(
@@ -155,16 +172,7 @@ class ReportsForm48 extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: CivicHorizonTheme.onSurface,
-                ),
-              ),
-              const SizedBox(width: 8),
-              const Icon(Icons.expand_more, size: 16, color: CivicHorizonTheme.onSurfaceVariant),
+              Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: CivicHorizonTheme.onSurface)),
             ],
           ),
         ),
@@ -172,17 +180,20 @@ class ReportsForm48 extends StatelessWidget {
     );
   }
 
-  Widget _buildAssembleButton() {
+  Widget _buildAssembleButton(ReportsState state, ReportsController notifier) {
+    bool isLoading = state.isGeneratingPdf || state.logsStatus.isLoading;
+
     return GestureDetector(
-      onTap: () {},
-      child: Container(
+      onTap: isLoading ? null : () => notifier.generatePDF(),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
         padding: const EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
-          gradient: CivicHorizonTheme.ctaGradient,
+          gradient: isLoading ? const LinearGradient(colors: [Colors.grey, Colors.blueGrey]) : CivicHorizonTheme.ctaGradient,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: CivicHorizonTheme.primary.withOpacity(0.1),
+              color: CivicHorizonTheme.primary.withAlpha(25),
               blurRadius: 15,
               offset: const Offset(0, 8),
             ),
@@ -190,12 +201,15 @@ class ReportsForm48 extends StatelessWidget {
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Icon(Icons.picture_as_pdf, color: Colors.white),
-            SizedBox(width: 12),
+          children: [
+            if (isLoading)
+              const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+            else
+              const Icon(Icons.picture_as_pdf, color: Colors.white),
+            const SizedBox(width: 12),
             Text(
-              'Assemble CSC Form 48 PDF',
-              style: TextStyle(
+              isLoading ? 'Rendering PDF...' : 'Assemble CSC Form 48 PDF',
+              style: const TextStyle(
                 fontFamily: 'Public Sans',
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -208,19 +222,19 @@ class ReportsForm48 extends StatelessWidget {
     );
   }
 
-  Widget _buildTimesheetLedger() {
+  Widget _buildTimesheetLedger(ReportsState state) {
+    final logs = state.logsStatus.valueOrNull ?? [];
+    final settings = state.settingsStatus.valueOrNull;
+    
+    int totalLateMins = 0;
+    int totalUndertimeMins = 0;
+
     return Container(
       decoration: BoxDecoration(
         color: CivicHorizonTheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: CivicHorizonTheme.outlineVariant.withOpacity(0.1)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x05000000),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: CivicHorizonTheme.outlineVariant.withAlpha(25)),
+        boxShadow: const [BoxShadow(color: Color(0x05000000), blurRadius: 10, offset: Offset(0, 4))],
       ),
       child: Column(
         children: [
@@ -229,7 +243,7 @@ class ReportsForm48 extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             decoration: BoxDecoration(
               color: CivicHorizonTheme.surfaceContainerLow,
-              border: Border(bottom: BorderSide(color: CivicHorizonTheme.outlineVariant.withOpacity(0.1))),
+              border: Border(bottom: BorderSide(color: CivicHorizonTheme.outlineVariant.withAlpha(25))),
               borderRadius: const BorderRadius.only(topLeft: Radius.circular(16), topRight: Radius.circular(16)),
             ),
             child: Row(
@@ -239,10 +253,7 @@ class ReportsForm48 extends StatelessWidget {
                   children: const [
                     Icon(Icons.event_note, color: CivicHorizonTheme.primary),
                     SizedBox(width: 8),
-                    Text(
-                      'Attendance Registry',
-                      style: TextStyle(fontWeight: FontWeight.bold, color: CivicHorizonTheme.primary),
-                    ),
+                    Text('Attendance Registry', style: TextStyle(fontWeight: FontWeight.bold, color: CivicHorizonTheme.primary)),
                   ],
                 ),
                 Container(
@@ -251,29 +262,45 @@ class ReportsForm48 extends StatelessWidget {
                     color: CivicHorizonTheme.tertiaryFixedDim,
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: const Text(
-                    'ACTIVE PERIOD',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w900,
-                      color: CivicHorizonTheme.onTertiaryFixedVariant,
-                    ),
-                  ),
+                  child: const Text('ACTIVE RECORD', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: CivicHorizonTheme.onTertiaryFixedVariant)),
                 ),
               ],
             ),
           ),
-          // Table Content Placeholder
+          
           _buildTableRowHeader(),
-          _buildTableRow('Nov 01, 2024', 'Friday', '07:54 AM', '05:02 PM', '-- : --', false),
-          _buildTableRow('Nov 04, 2024', 'Monday', '08:15 AM', '05:10 PM', '0:15', true),
-          _buildTableRow('Nov 05, 2024', 'Tuesday', '07:48 AM', '04:30 PM', '0:30', true),
-          _buildTableRow('Nov 06, 2024', 'Wednesday', '07:59 AM', '05:05 PM', '-- : --', false),
+
+          if (state.logsStatus.isLoading)
+            const Padding(padding: EdgeInsets.all(48), child: Center(child: CircularProgressIndicator())),
+
+          if (!state.logsStatus.isLoading && logs.isEmpty)
+             const Padding(padding: EdgeInsets.all(48), child: Center(child: Text("No attendance logged for this period.", style: TextStyle(color: Colors.grey)))),
+
+          // Dynamically map table rows
+          ...logs.map((log) {
+            final dtIn = DateTime.parse(log.timeIn);
+            final strDate = DateFormat('MMM dd, yyyy').format(dtIn);
+            final strDay = DateFormat('EEEE').format(dtIn);
+            final strArr = DateFormat('hh:mm a').format(dtIn);
+            final strDep = log.timeOut != null ? DateFormat('hh:mm a').format(DateTime.parse(log.timeOut!)) : 'Active';
+
+            int lateVal = 0;
+            if (settings != null && log.timeOut != null) {
+              lateVal = HourglassEngine.calculateLateDeductions(log, settings.expectedTimeIn);
+              totalLateMins += lateVal;
+            }
+
+            final lateString = lateVal > 0 ? '$lateVal m' : '-- : --';
+            final hasError = lateVal > 0;
+
+            return _buildTableRow(strDate, strDay, strArr, strDep, lateString, hasError);
+          }),
+
           // Table Footer Actions
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: CivicHorizonTheme.surfaceContainerHighest.withOpacity(0.4),
+              color: CivicHorizonTheme.surfaceContainerHighest.withAlpha(102),
               borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(16), bottomRight: Radius.circular(16)),
             ),
             child: Wrap(
@@ -285,17 +312,15 @@ class ReportsForm48 extends StatelessWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _buildLedgerStat('Total Tardy', '15 mins'),
+                    _buildLedgerStat('Total Tardy', '$totalLateMins mins'),
                     const SizedBox(width: 32),
-                    _buildLedgerStat('Total Undertime', '30 mins'),
+                    _buildLedgerStat('Total Undertime', '${totalUndertimeMins} mins'),
                   ],
                 ),
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _buildFooterButton(Icons.visibility, 'Preview PDF', isPrimary: false),
-                    const SizedBox(width: 12),
-                    _buildFooterButton(Icons.ios_share, 'Share/Export', isPrimary: true),
+                    _buildFooterButton(Icons.ios_share, 'Export to CSC PDF', isPrimary: true),
                   ],
                 ),
               ],
@@ -329,9 +354,7 @@ class ReportsForm48 extends StatelessWidget {
 
   Widget _buildTableRow(String date, String day, String arr, String dep, String lateVal, bool hasError) {
     return Container(
-      decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: CivicHorizonTheme.surfaceContainerHigh)),
-      ),
+      decoration: const BoxDecoration(border: Border(top: BorderSide(color: CivicHorizonTheme.surfaceContainerHigh))),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Row(
         children: [
@@ -348,19 +371,13 @@ class ReportsForm48 extends StatelessWidget {
           Expanded(
             flex: 2,
             child: Center(
-              child: Text(
-                arr,
-                style: TextStyle(fontWeight: FontWeight.w500, color: hasError && arr.startsWith('08') ? CivicHorizonTheme.error : CivicHorizonTheme.onSurface),
-              ),
+              child: Text(arr, style: TextStyle(fontWeight: FontWeight.w500, color: hasError ? CivicHorizonTheme.error : CivicHorizonTheme.onSurface)),
             ),
           ),
           Expanded(
             flex: 2,
             child: Center(
-              child: Text(
-                dep,
-                style: TextStyle(fontWeight: FontWeight.w500, color: hasError && dep.startsWith('04') ? CivicHorizonTheme.error : CivicHorizonTheme.onSurface),
-              ),
+              child: Text(dep, style: const TextStyle(fontWeight: FontWeight.w500, color: CivicHorizonTheme.onSurface)),
             ),
           ),
           Expanded(
@@ -389,20 +406,11 @@ class ReportsForm48 extends StatelessWidget {
       children: [
         Text(
           label.toUpperCase(),
-          style: const TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
-            letterSpacing: -0.5,
-            color: CivicHorizonTheme.onSurfaceVariant,
-          ),
+          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: -0.5, color: CivicHorizonTheme.onSurfaceVariant),
         ),
         Text(
           value,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w900,
-            color: CivicHorizonTheme.onSurface,
-          ),
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: CivicHorizonTheme.onSurface),
         ),
       ],
     );
@@ -422,7 +430,7 @@ class ReportsForm48 extends StatelessWidget {
     );
   }
 
-  Widget _buildSecondaryInsights() {
+  Widget _buildSecondaryInsights(ReportsState state) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -432,7 +440,7 @@ class ReportsForm48 extends StatelessWidget {
             decoration: BoxDecoration(
               color: CivicHorizonTheme.surfaceContainerLow,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: CivicHorizonTheme.outlineVariant.withOpacity(0.05)),
+              border: Border.all(color: CivicHorizonTheme.outlineVariant.withAlpha(12)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -441,10 +449,7 @@ class ReportsForm48 extends StatelessWidget {
                   children: const [
                     Icon(Icons.verified, color: CivicHorizonTheme.primaryContainer, size: 18),
                     SizedBox(width: 8),
-                    Text(
-                      'Certification Status',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: CivicHorizonTheme.primaryContainer),
-                    ),
+                    Text('Certification Status', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: CivicHorizonTheme.primaryContainer)),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -457,43 +462,37 @@ class ReportsForm48 extends StatelessWidget {
                   height: 60,
                   alignment: Alignment.bottomCenter,
                   padding: const EdgeInsets.only(bottom: 8),
-                  decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: CivicHorizonTheme.outlineVariant, style: BorderStyle.solid))), // Flutter doesn't native support dashed easily without package, using solid
-                  child: const Text('E-SIGNATURE ON FILE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.0, color: CivicHorizonTheme.onSurfaceVariant)),
+                  decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: CivicHorizonTheme.outlineVariant, style: BorderStyle.solid))),
+                  child: Text(
+                    state.profileStatus.valueOrNull?.name.toUpperCase() ?? 'E-SIGNATURE ON FILE',
+                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.0, color: CivicHorizonTheme.primary),
+                  ),
                 ),
               ],
             ),
           ),
         ),
         const SizedBox(width: 16),
-        // Simplification for screen sizing, omitting the 2nd insight card for brevity or making it smaller if needed.
-        // I will omit the "Need adjustments" box on smaller screens to stick to pure flutter rendering easily.
         Expanded(
           child: Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: CivicHorizonTheme.surfaceContainerLow,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: CivicHorizonTheme.outlineVariant.withOpacity(0.05)),
+              border: Border.all(color: CivicHorizonTheme.outlineVariant.withAlpha(12)),
             ),
             child: Column(
               children: [
                 Container(
                   width: 48,
                   height: 48,
-                  decoration: BoxDecoration(
-                    color: CivicHorizonTheme.primaryContainer.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
+                  decoration: BoxDecoration(color: CivicHorizonTheme.primaryContainer.withAlpha(25), shape: BoxShape.circle),
                   child: const Icon(Icons.info, color: CivicHorizonTheme.primaryContainer),
                 ),
                 const SizedBox(height: 12),
                 const Text('Need Adjustments?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                 const SizedBox(height: 8),
-                const Text(
-                  'Submit a Correction Request through Journal.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 11, color: CivicHorizonTheme.onSurfaceVariant),
-                ),
+                const Text('Submit a Correction Request through Journal.', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, color: CivicHorizonTheme.onSurfaceVariant)),
                 const SizedBox(height: 8),
                 TextButton(
                   onPressed: () {},
@@ -504,65 +503,6 @@ class ReportsForm48 extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildBottomNavBar() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.95),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0D000000),
-            blurRadius: 20,
-            offset: Offset(0, -4),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(Icons.home, 'Home'),
-              _buildNavItem(Icons.edit_note, 'Journal'),
-              _buildNavItem(Icons.analytics, 'Reports', isActive: true),
-              _buildNavItem(Icons.settings, 'Settings'),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem(IconData icon, String label, {bool isActive = false}) {
-    final color = isActive ? CivicHorizonTheme.primary : const Color(0xFF94A3B8);
-    final bgColor = isActive ? CivicHorizonTheme.primary.withOpacity(0.1) : Colors.transparent;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 4),
-          Text(
-            label.toUpperCase(),
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
-              color: color,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
