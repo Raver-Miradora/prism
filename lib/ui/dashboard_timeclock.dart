@@ -1,27 +1,27 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../core/theme/civic_horizon_theme.dart';
 import '../controllers/timeclock_controller.dart';
+import 'widgets/prism_drawer.dart';
 
 class DashboardTimeclock extends ConsumerWidget {
   const DashboardTimeclock({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Watch our core engine state!
     final state = ref.watch(timeclockControllerProvider);
     final notifier = ref.read(timeclockControllerProvider.notifier);
 
-    // Dynamic UI state variables
     final isClockedIn = state.activeLog != null;
     final progressVal = state.accumulatedHours / state.targetHours;
     final formattedProgress = (progressVal * 100).clamp(0, 100).toStringAsFixed(0);
 
     return Scaffold(
       backgroundColor: CivicHorizonTheme.background,
+      drawer: const PrismDrawer(),
       body: SafeArea(
         child: Column(
           children: [
@@ -42,7 +42,7 @@ class DashboardTimeclock extends ConsumerWidget {
                     _buildActionButtons(isClockedIn, notifier),
                     const SizedBox(height: 48),
                     _buildProgressIndicator(state, formattedProgress),
-                    const SizedBox(height: 100), // Scrolling clearance for BottomNav
+                    const SizedBox(height: 100),
                   ],
                 ),
               ),
@@ -57,10 +57,10 @@ class DashboardTimeclock extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       decoration: BoxDecoration(
-        color: CivicHorizonTheme.surface.withOpacity(0.85),
+        color: CivicHorizonTheme.surface.withAlpha(216),
         border: Border(
           bottom: BorderSide(
-            color: CivicHorizonTheme.surfaceContainerHigh.withOpacity(0.5),
+            color: CivicHorizonTheme.surfaceContainerHigh.withAlpha(128),
             width: 1,
           ),
         ),
@@ -70,9 +70,11 @@ class DashboardTimeclock extends ConsumerWidget {
         children: [
           Row(
             children: [
-              IconButton(
-                icon: const Icon(Icons.menu, color: CivicHorizonTheme.primary),
-                onPressed: () {},
+              Builder(
+                builder: (ctx) => IconButton(
+                  icon: const Icon(Icons.menu, color: CivicHorizonTheme.primary),
+                  onPressed: () => Scaffold.of(ctx).openDrawer(),
+                ),
               ),
               const SizedBox(width: 8),
               const Text(
@@ -106,15 +108,31 @@ class DashboardTimeclock extends ConsumerWidget {
   }
 
   Widget _buildDigitalClock(TimeclockState state) {
-    // If clocked in, show their Clock In time. Else show current time (standard layout).
-    final dt = state.activeLog != null ? DateTime.parse(state.activeLog!.timeIn) : DateTime.now();
+    if (state.activeLog != null) {
+      // Show static clocked-in time, forced to UTC+8 Philippine Time
+      final dt = DateTime.parse(state.activeLog!.timeIn).toUtc().add(const Duration(hours: 8));
+      return _buildStaticClockUI(dt, 'ACTIVE RESTRICTED SHIFT');
+    }
+
+    // Show real-time ticking clock with seconds, forced to UTC+8 Philippine Time
+    return StreamBuilder<DateTime>(
+      stream: Stream.periodic(const Duration(seconds: 1), (_) => DateTime.now().toUtc().add(const Duration(hours: 8))),
+      builder: (context, snapshot) {
+        final dt = snapshot.data ?? DateTime.now().toUtc().add(const Duration(hours: 8));
+        return _buildStaticClockUI(dt, 'STANDARD TIME REGISTRY');
+      },
+    );
+  }
+
+  Widget _buildStaticClockUI(DateTime dt, String label) {
     final timeStr = DateFormat('hh:mm').format(dt);
+    final secStr = DateFormat(':ss').format(dt);
     final periodStr = DateFormat('a').format(dt);
 
     return Column(
       children: [
         Text(
-          state.activeLog != null ? 'ACTIVE RESTRICTED SHIFT' : 'STANDARD TIME REGISTRY',
+          label,
           style: const TextStyle(
             fontFamily: 'Inter',
             fontSize: 10,
@@ -137,6 +155,15 @@ class DashboardTimeclock extends ConsumerWidget {
                 fontWeight: FontWeight.w900,
                 color: CivicHorizonTheme.primary,
                 letterSpacing: -2.0,
+              ),
+            ),
+            Text(
+              secStr,
+              style: const TextStyle(
+                fontFamily: 'Public Sans',
+                fontSize: 32,
+                fontWeight: FontWeight.w800,
+                color: CivicHorizonTheme.outlineVariant,
               ),
             ),
             const SizedBox(width: 8),
@@ -266,7 +293,7 @@ class DashboardTimeclock extends ConsumerWidget {
           onTap: !isClockedIn ? null : () => notifier.clockOut(),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 300),
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(32), // MADE EQUAL PADDING TO CLOCK IN
             decoration: BoxDecoration(
               color: !isClockedIn ? CivicHorizonTheme.surfaceContainerLow : CivicHorizonTheme.surfaceContainerLowest,
               borderRadius: BorderRadius.circular(12),
@@ -298,7 +325,7 @@ class DashboardTimeclock extends ConsumerWidget {
                       'CLOCK OUT',
                       style: TextStyle(
                         fontFamily: 'Public Sans',
-                        fontSize: 20,
+                        fontSize: 32, // MADE EQUAL FONT SIZE TO CLOCK IN
                         fontWeight: FontWeight.w900,
                         color: !isClockedIn ? CivicHorizonTheme.outlineVariant : CivicHorizonTheme.error,
                       ),
@@ -308,7 +335,7 @@ class DashboardTimeclock extends ConsumerWidget {
                 Icon(
                   Icons.stop_circle,
                   color: !isClockedIn ? CivicHorizonTheme.outlineVariant : CivicHorizonTheme.error,
-                  size: 32,
+                  size: 40, // Match size of the camera block width visually
                 ),
               ],
             ),
@@ -354,7 +381,7 @@ class DashboardTimeclock extends ConsumerWidget {
                 textBaseline: TextBaseline.alphabetic,
                 children: [
                   Text(
-                    state.accumulatedHours.toStringAsFixed(1), // Reactive Hours
+                    state.accumulatedHours.toStringAsFixed(1),
                     style: const TextStyle(
                       fontFamily: 'Public Sans',
                       fontSize: 40,
@@ -392,7 +419,7 @@ class DashboardTimeclock extends ConsumerWidget {
                 width: 96,
                 height: 96,
                 child: CircularProgressIndicator(
-                  value: state.accumulatedHours / state.targetHours, // Reactive Tracker
+                  value: state.accumulatedHours / state.targetHours,
                   strokeWidth: 8,
                   backgroundColor: CivicHorizonTheme.primaryContainer,
                   color: CivicHorizonTheme.tertiaryFixedDim,
