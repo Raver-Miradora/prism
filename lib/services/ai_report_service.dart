@@ -13,17 +13,20 @@ class AiReportService {
     }
 
     // 3. Mock the "Formalized" output text
-    // In the future, you will swap this literal string for a `http.post` call to the Gemini API.
-    final String formalOutput = """
-This log serves as the formal Daily Time Record (DTR) narrative attachment for the active shift. 
+    // A simple regex mock to elevate language since an LLM key isn't present
+    String cleanNotes = rawNotes.trim();
+    if (cleanNotes.endsWith('.')) {
+      cleanNotes = cleanNotes.substring(0, cleanNotes.length - 1);
+    }
+    
+    // Capitalize first letter
+    if (cleanNotes.isNotEmpty) {
+      cleanNotes = cleanNotes[0].toUpperCase() + cleanNotes.substring(1);
+    }
+    
+    // Output a direct formal execution string
+    final String formalOutput = "- Successfully executed and facilitated the following standard operations: $cleanNotes, ensuring strict compliance with all designated departmental directives.";
 
-The intern reported for duty at the designated time and conducted the following activities, which were summarized informally as:
-
-"$rawNotes"
-
-These tasks align strictly with the standard operating procedures of the assigned governmental division. Technical assistance was provided where required by supervisors, and all deliverables for the documented shift were completed satisfactorily prior to the intern's departure.
-""";
-
-    return formalOutput.trim();
+    return formalOutput;
   }
 }
