@@ -65,4 +65,20 @@ class TimeLogRepository {
     }
     return total;
   }
+
+  /// Get all logs for a specific year and month
+  Future<List<TimeLog>> getLogsForMonth(int year, int month) async {
+    final db = await _dbHelper.database;
+    final String paddedMonth = month.toString().padLeft(2, '0');
+    final String prefix = "$year-$paddedMonth-";
+
+    final List<Map<String, dynamic>> maps = await db.query(
+      'time_logs',
+      where: 'date LIKE ?',
+      whereArgs: ['$prefix%'],
+      orderBy: 'date ASC',
+    );
+
+    return maps.map((m) => TimeLog.fromMap(m)).toList();
+  }
 }
