@@ -4,10 +4,10 @@ import 'package:intl/intl.dart';
 
 import '../core/theme/civic_horizon_theme.dart';
 import '../controllers/reports_controller.dart';
+import '../controllers/timeclock_controller.dart';
 import '../core/utils/hourglass_engine.dart';
 import 'widgets/prism_drawer.dart';
 import 'widgets/profile_avatar.dart';
-import 'main_shell.dart';
 
 class ReportsForm48 extends ConsumerWidget {
   const ReportsForm48({super.key});
@@ -18,25 +18,23 @@ class ReportsForm48 extends ConsumerWidget {
     final notifier = ref.read(reportsControllerProvider.notifier);
 
     return Scaffold(
-      backgroundColor: CivicHorizonTheme.background,
+      backgroundColor: context.colors.surface,
       drawer: const PrismDrawer(),
       body: SafeArea(
         child: Column(
           children: [
-            _buildTopAppBar(),
+            _buildTopAppBar(context),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _buildReportHeader(state, notifier),
+                    _buildReportHeader(context, state, notifier),
                     const SizedBox(height: 32),
-                    _buildTimesheetLedger(state),
+                    _buildTimesheetLedger(context, ref, state),
                     const SizedBox(height: 32),
-                    _buildAssembleButton(state, notifier),
-                    const SizedBox(height: 32),
-                    _buildSecondaryInsights(state, notifier, ref),
+                    _buildAssembleButton(context, state, notifier),
                     const SizedBox(height: 80),
                   ],
                 ),
@@ -48,14 +46,14 @@ class ReportsForm48 extends ConsumerWidget {
     );
   }
 
-  Widget _buildTopAppBar() {
+  Widget _buildTopAppBar(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       decoration: BoxDecoration(
-        color: CivicHorizonTheme.surface.withAlpha(216),
+        color: context.colors.surface.withAlpha(216),
         border: Border(
           bottom: BorderSide(
-            color: CivicHorizonTheme.surfaceContainerHigh.withAlpha(128),
+            color: context.colors.surfaceContainerHigh.withAlpha(128),
             width: 1,
           ),
         ),
@@ -67,30 +65,37 @@ class ReportsForm48 extends ConsumerWidget {
             children: [
               Builder(
                 builder: (ctx) => IconButton(
-                  icon: const Icon(Icons.menu, color: CivicHorizonTheme.primary),
+                  icon: Icon(Icons.menu, color: context.colors.primary),
                   onPressed: () => Scaffold.of(ctx).openDrawer(),
                 ),
               ),
               const SizedBox(width: 8),
-              const Text(
-                'Reports',
-                style: TextStyle(
-                  fontFamily: 'Public Sans',
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                  color: CivicHorizonTheme.primary,
-                  letterSpacing: -1.0,
-                ),
+              Text(
+                'PRISM',
+                style: context.text.headlineLarge?.copyWith(fontSize: 20, letterSpacing: -1.0),
               ),
             ],
           ),
-          const ProfileAvatar(size: 40),
+          Row(
+            children: [
+              Text(
+                'Reports',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: context.colors.primary,
+                ),
+              ),
+              const SizedBox(width: 16),
+              const ProfileAvatar(size: 44),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildReportHeader(ReportsState state, ReportsController notifier) {
+  Widget _buildReportHeader(BuildContext context, ReportsState state, ReportsController notifier) {
     return Wrap(
       alignment: WrapAlignment.spaceBetween,
       crossAxisAlignment: WrapCrossAlignment.end,
@@ -98,16 +103,10 @@ class ReportsForm48 extends ConsumerWidget {
       children: [
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
+          children: [
             Text(
               'DTR Generator',
-              style: TextStyle(
-                fontFamily: 'Public Sans',
-                fontSize: 28,
-                fontWeight: FontWeight.w900,
-                color: CivicHorizonTheme.primary,
-                letterSpacing: -1.0,
-              ),
+              style: context.text.displayMedium?.copyWith(fontSize: 28, letterSpacing: -1.0),
             ),
           ],
         ),
@@ -115,15 +114,22 @@ class ReportsForm48 extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
-              icon: const Icon(Icons.chevron_left, color: CivicHorizonTheme.primary),
+              icon: Icon(Icons.refresh, color: context.colors.primary),
+              onPressed: () => notifier.loadData(state.selectedYear, state.selectedMonth),
+              tooltip: 'Refresh Data',
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              icon: Icon(Icons.chevron_left, color: context.colors.primary),
               onPressed: () => notifier.changeMonth(-1),
             ),
             _buildDropdownFilter(
+              context,
               'Period', 
               DateFormat('MMMM yyyy').format(DateTime(state.selectedYear, state.selectedMonth))
             ),
             IconButton(
-              icon: const Icon(Icons.chevron_right, color: CivicHorizonTheme.primary),
+              icon: Icon(Icons.chevron_right, color: context.colors.primary),
               onPressed: () => notifier.changeMonth(1),
             ),
           ],
@@ -132,7 +138,7 @@ class ReportsForm48 extends ConsumerWidget {
     );
   }
 
-  Widget _buildDropdownFilter(String label, String value) {
+  Widget _buildDropdownFilter(BuildContext context, String label, String value) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -140,19 +146,19 @@ class ReportsForm48 extends ConsumerWidget {
           padding: const EdgeInsets.only(left: 4, bottom: 4),
           child: Text(
             label,
-            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: CivicHorizonTheme.onSurfaceVariant),
+            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: context.colors.onSurfaceVariant),
           ),
         ),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: CivicHorizonTheme.surfaceContainerHigh,
+            color: context.colors.surfaceContainerHigh,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: CivicHorizonTheme.onSurface)),
+              Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: context.colors.onSurface)),
             ],
           ),
         ),
@@ -160,7 +166,7 @@ class ReportsForm48 extends ConsumerWidget {
     );
   }
 
-  Widget _buildAssembleButton(ReportsState state, ReportsController notifier) {
+  Widget _buildAssembleButton(BuildContext context, ReportsState state, ReportsController notifier) {
     bool isLoading = state.isGeneratingPdf || state.logsStatus.isLoading;
 
     return GestureDetector(
@@ -169,11 +175,11 @@ class ReportsForm48 extends ConsumerWidget {
         duration: const Duration(milliseconds: 300),
         padding: const EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
-          gradient: isLoading ? const LinearGradient(colors: [Colors.grey, Colors.blueGrey]) : CivicHorizonTheme.ctaGradient,
+          gradient: isLoading ? const LinearGradient(colors: [Colors.grey, Colors.blueGrey]) : CivicHorizonTheme.ctaGradient(context),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: CivicHorizonTheme.primary.withAlpha(25),
+              color: context.colors.primary.withAlpha(25),
               blurRadius: 15,
               offset: const Offset(0, 8),
             ),
@@ -202,7 +208,7 @@ class ReportsForm48 extends ConsumerWidget {
     );
   }
 
-  Widget _buildTimesheetLedger(ReportsState state) {
+  Widget _buildTimesheetLedger(BuildContext context, WidgetRef ref, ReportsState state) {
     final logs = state.logsStatus.valueOrNull ?? [];
     final settings = state.settingsStatus.valueOrNull;
     
@@ -211,10 +217,10 @@ class ReportsForm48 extends ConsumerWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: CivicHorizonTheme.surfaceContainerLowest,
+        color: context.colors.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: CivicHorizonTheme.outlineVariant.withAlpha(25)),
-        boxShadow: const [BoxShadow(color: Color(0x05000000), blurRadius: 10, offset: Offset(0, 4))],
+        border: Border.all(color: context.colors.outlineVariant.withAlpha(25)),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: Column(
         children: [
@@ -222,33 +228,33 @@ class ReportsForm48 extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             decoration: BoxDecoration(
-              color: CivicHorizonTheme.surfaceContainerLow,
-              border: Border(bottom: BorderSide(color: CivicHorizonTheme.outlineVariant.withAlpha(25))),
+              color: context.colors.surfaceContainerLow,
+              border: Border(bottom: BorderSide(color: context.colors.outlineVariant.withAlpha(25))),
               borderRadius: const BorderRadius.only(topLeft: Radius.circular(16), topRight: Radius.circular(16)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
-                  children: const [
-                    Icon(Icons.event_note, color: CivicHorizonTheme.primary),
-                    SizedBox(width: 8),
-                    Text('Attendance Registry', style: TextStyle(fontWeight: FontWeight.bold, color: CivicHorizonTheme.primary)),
+                  children: [
+                    Icon(Icons.event_note, color: context.colors.primary),
+                    const SizedBox(width: 8),
+                    Text('Attendance Registry', style: TextStyle(fontWeight: FontWeight.bold, color: context.colors.primary)),
                   ],
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
-                    color: CivicHorizonTheme.tertiaryFixedDim,
+                    color: context.colors.tertiary.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: const Text('ACTIVE RECORD', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: CivicHorizonTheme.onTertiaryFixedVariant)),
+                  child: Text('ACTIVE RECORD', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: context.colors.tertiary)),
                 ),
               ],
             ),
           ),
           
-          _buildTableRowHeader(),
+          _buildTableRowHeader(context),
 
           if (state.logsStatus.isLoading)
             const Padding(padding: EdgeInsets.all(48), child: Center(child: CircularProgressIndicator())),
@@ -258,14 +264,22 @@ class ReportsForm48 extends ConsumerWidget {
 
           // Dynamically map table rows
           ...logs.map((log) {
-            final dtIn = DateTime.parse(log.timeIn);
+            final isWork = log.status == 'WORK';
+            final dtIn = log.timeIn != null ? DateTime.parse(log.timeIn!) : DateTime.parse(log.date);
             final strDate = DateFormat('MMM dd, yyyy').format(dtIn);
             final strDay = DateFormat('EEEE').format(dtIn);
-            final strArr = DateFormat('hh:mm a').format(dtIn);
-            final strDep = log.timeOut != null ? DateFormat('hh:mm a').format(DateTime.parse(log.timeOut!)) : 'Active';
+            
+            // Format Display Status
+            String displayStatus = log.status;
+            if (displayStatus == 'HOLIDAY_FULL') displayStatus = 'HOLIDAY';
+            if (displayStatus == 'HOLIDAY_AM') displayStatus = 'HOLIDAY (AM)';
+            if (displayStatus == 'HOLIDAY_PM') displayStatus = 'HOLIDAY (PM)';
 
+            String strArr = isWork ? (log.timeIn != null ? DateFormat('hh:mm a').format(DateTime.parse(log.timeIn!)) : '--:--') : displayStatus;
+            String strDep = isWork ? (log.timeOut != null ? DateFormat('hh:mm a').format(DateTime.parse(log.timeOut!)) : 'Active') : (log.remarks ?? '');
+            
             int lateVal = 0;
-            if (settings != null && log.timeOut != null) {
+            if (settings != null && log.timeOut != null && isWork) {
               lateVal = HourglassEngine.calculateLateDeductions(log, settings.expectedTimeIn);
               totalLateMins += lateVal;
             }
@@ -273,14 +287,14 @@ class ReportsForm48 extends ConsumerWidget {
             final lateString = lateVal > 0 ? '$lateVal m' : '-- : --';
             final hasError = lateVal > 0;
 
-            return _buildTableRow(strDate, strDay, strArr, strDep, lateString, hasError);
+            return _buildTableRow(context, strDate, strDay, strArr, strDep, lateString, hasError);
           }),
 
           // Table Footer Actions
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: CivicHorizonTheme.surfaceContainerHighest.withAlpha(102),
+              color: context.colors.surfaceContainerHighest.withAlpha(102),
               borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(16), bottomRight: Radius.circular(16)),
             ),
             child: Wrap(
@@ -292,10 +306,21 @@ class ReportsForm48 extends ConsumerWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _buildLedgerStat('Total Tardy', '$totalLateMins mins'),
+                    _buildLedgerStat(context, 'Total Tardy', '$totalLateMins mins'),
                     const SizedBox(width: 32),
-                    _buildLedgerStat('Total Undertime', '${totalUndertimeMins} mins'),
+                    _buildLedgerStat(context, 'Total Undertime', '$totalUndertimeMins mins'),
                   ],
+                ),
+                ElevatedButton.icon(
+                  onPressed: () => _showManualEntryDialog(context, ref),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: context.colors.primary,
+                    foregroundColor: context.colors.onPrimary,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  icon: const Icon(Icons.edit_calendar, size: 18),
+                  label: const Text('Log Absence/Leave/Holiday', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                 ),
               ],
             ),
@@ -305,30 +330,112 @@ class ReportsForm48 extends ConsumerWidget {
     );
   }
 
-  Widget _buildTableRowHeader() {
+  void _showManualEntryDialog(BuildContext context, WidgetRef ref) {
+    DateTime selectedDate = DateTime.now();
+    String selectedStatus = 'ABSENT';
+    final remarksController = TextEditingController();
+
+    final statusOptions = {
+      'ABSENT': 'Absent',
+      'EXCUSED': 'Excused / Leave',
+      'HOLIDAY_FULL': 'Holiday (Whole Day)',
+      'HOLIDAY_AM': 'Holiday (AM Only)',
+      'HOLIDAY_PM': 'Holiday (PM Only)',
+    };
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Log Status Entry', style: TextStyle(fontFamily: 'Public Sans', fontWeight: FontWeight.bold)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text("Date: ${DateFormat('yyyy-MM-dd').format(selectedDate)}"),
+                trailing: const Icon(Icons.calendar_today, size: 20),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: selectedDate,
+                    firstDate: DateTime(2024),
+                    lastDate: DateTime(2100),
+                  );
+                  if (picked != null) setState(() => selectedDate = picked);
+                },
+              ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                value: selectedStatus,
+                decoration: const InputDecoration(
+                  labelText: 'Attendance Status',
+                  labelStyle: TextStyle(fontSize: 12),
+                  border: OutlineInputBorder(),
+                ),
+                items: statusOptions.entries.map((e) => DropdownMenuItem(value: e.key, child: Text(e.value, style: const TextStyle(fontSize: 14)))).toList(),
+                onChanged: (val) => setState(() => selectedStatus = val!),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: remarksController,
+                decoration: const InputDecoration(
+                  labelText: 'Remarks / Specific Reason',
+                  labelStyle: TextStyle(fontSize: 12),
+                  hintText: 'e.g. Sick Leave, National Holiday...',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () async {
+                await ref.read(timeclockControllerProvider.notifier).logAttendanceStatus(
+                  selectedDate,
+                  selectedStatus,
+                  remarksController.text,
+                );
+                // Refresh list
+                ref.read(reportsControllerProvider.notifier).loadData(
+                  ref.read(reportsControllerProvider).selectedYear,
+                  ref.read(reportsControllerProvider).selectedMonth,
+                );
+                if (context.mounted) Navigator.pop(ctx);
+              },
+              child: const Text('Save Entry'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTableRowHeader(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Row(
-        children: const [
-          Expanded(flex: 3, child: Text('DATE', style: _headerStyle)),
-          Expanded(flex: 2, child: Center(child: Text('ARRIVAL', style: _headerStyle))),
-          Expanded(flex: 2, child: Center(child: Text('DEPARTURE', style: _headerStyle))),
-          Expanded(flex: 2, child: Align(alignment: Alignment.centerRight, child: Text('LATE', style: _headerStyle))),
+        children: [
+          Expanded(flex: 3, child: Text('DATE', style: _headerStyle(context))),
+          Expanded(flex: 2, child: Center(child: Text('ARRIVAL', style: _headerStyle(context)))),
+          Expanded(flex: 2, child: Center(child: Text('DEPARTURE', style: _headerStyle(context)))),
+          Expanded(flex: 2, child: Align(alignment: Alignment.centerRight, child: Text('LATE', style: _headerStyle(context)))),
         ],
       ),
     );
   }
 
-  static const TextStyle _headerStyle = TextStyle(
+  TextStyle _headerStyle(BuildContext context) => TextStyle(
     fontSize: 10,
     fontWeight: FontWeight.bold,
-    color: CivicHorizonTheme.onSurfaceVariant,
+    color: context.colors.onSurfaceVariant,
     letterSpacing: 1.0,
   );
 
-  Widget _buildTableRow(String date, String day, String arr, String dep, String lateVal, bool hasError) {
+  Widget _buildTableRow(BuildContext context, String date, String day, String arr, String dep, String lateVal, bool hasError) {
     return Container(
-      decoration: const BoxDecoration(border: Border(top: BorderSide(color: CivicHorizonTheme.surfaceContainerHigh))),
+      decoration: BoxDecoration(border: Border(top: BorderSide(color: context.colors.surfaceContainerHigh))),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Row(
         children: [
@@ -337,21 +444,21 @@ class ReportsForm48 extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(date, style: const TextStyle(fontWeight: FontWeight.bold, color: CivicHorizonTheme.onSurface)),
-                Text(day, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: CivicHorizonTheme.onSurfaceVariant)),
+                Text(date, style: TextStyle(fontWeight: FontWeight.bold, color: context.colors.onSurface)),
+                Text(day, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: context.colors.onSurfaceVariant)),
               ],
             ),
           ),
           Expanded(
             flex: 2,
             child: Center(
-              child: Text(arr, style: TextStyle(fontWeight: FontWeight.w500, color: hasError ? CivicHorizonTheme.error : CivicHorizonTheme.onSurface)),
+              child: Text(arr, style: TextStyle(fontWeight: FontWeight.w500, color: hasError ? context.colors.error : context.colors.onSurface)),
             ),
           ),
           Expanded(
             flex: 2,
             child: Center(
-              child: Text(dep, style: const TextStyle(fontWeight: FontWeight.w500, color: CivicHorizonTheme.onSurface)),
+              child: Text(dep, style: TextStyle(fontWeight: FontWeight.w500, color: context.colors.onSurface)),
             ),
           ),
           Expanded(
@@ -364,7 +471,7 @@ class ReportsForm48 extends ConsumerWidget {
                   fontFamily: 'monospace',
                   fontSize: 14,
                   fontWeight: hasError ? FontWeight.bold : FontWeight.normal,
-                  color: hasError ? CivicHorizonTheme.error : const Color(0xFF179D53),
+                  color: hasError ? context.colors.error : const Color(0xFF179D53),
                 ),
               ),
             ),
@@ -374,111 +481,20 @@ class ReportsForm48 extends ConsumerWidget {
     );
   }
 
-  Widget _buildLedgerStat(String label, String value) {
+  Widget _buildLedgerStat(BuildContext context, String label, String value) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label.toUpperCase(),
-          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: -0.5, color: CivicHorizonTheme.onSurfaceVariant),
+          style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: -0.5, color: context.colors.onSurfaceVariant),
         ),
         Text(
           value,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: CivicHorizonTheme.onSurface),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: context.colors.onSurface),
         ),
       ],
     );
   }
 
-  Widget _buildFooterButton(IconData icon, String label, {required bool isPrimary}) {
-    return TextButton.icon(
-      onPressed: () {},
-      style: TextButton.styleFrom(
-        backgroundColor: isPrimary ? CivicHorizonTheme.primary : CivicHorizonTheme.surfaceContainerHighest,
-        foregroundColor: isPrimary ? CivicHorizonTheme.onPrimary : CivicHorizonTheme.onSurface,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-      icon: Icon(icon, size: 18),
-      label: Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-    );
-  }
-
-  Widget _buildSecondaryInsights(ReportsState state, ReportsController notifier, WidgetRef ref) {
-    return Wrap(
-      spacing: 16,
-      runSpacing: 16,
-      children: [
-        Container(
-          width: 380, // Constrain width instead of Expanded
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: CivicHorizonTheme.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: CivicHorizonTheme.outlineVariant.withAlpha(12)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: const [
-                  Icon(Icons.verified, color: CivicHorizonTheme.primaryContainer, size: 18),
-                  SizedBox(width: 8),
-                  Text('Certification Status', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: CivicHorizonTheme.primaryContainer)),
-                ],
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'I certify on my honor that the above is a true and correct report of the hours of work performed...',
-                style: TextStyle(fontSize: 12, color: CivicHorizonTheme.onSurfaceVariant, height: 1.5),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                initialValue: state.profileStatus.valueOrNull?.name ?? '',
-                onFieldSubmitted: (val) => notifier.updateProfileName(val),
-                decoration: const InputDecoration(
-                  hintText: 'Enter E-Signature Name...',
-                  hintStyle: TextStyle(fontSize: 10, letterSpacing: 1.0),
-                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: CivicHorizonTheme.outlineVariant)),
-                  focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: CivicHorizonTheme.primary, width: 2)),
-                ),
-                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.0, color: CivicHorizonTheme.primary),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-        Container(
-          width: 380, // Constrain width instead of Expanded
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: CivicHorizonTheme.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: CivicHorizonTheme.outlineVariant.withAlpha(12)),
-          ),
-          child: Column(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(color: CivicHorizonTheme.primaryContainer.withAlpha(25), shape: BoxShape.circle),
-                child: const Icon(Icons.info, color: CivicHorizonTheme.primaryContainer),
-              ),
-              const SizedBox(height: 12),
-              const Text('Need Adjustments?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-              const SizedBox(height: 8),
-              const Text('Submit a Correction Request through Journal.', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, color: CivicHorizonTheme.onSurfaceVariant)),
-              const SizedBox(height: 8),
-              TextButton(
-                onPressed: () {
-                  ref.read(navIndexProvider.notifier).state = 1;
-                },
-                child: const Text('Open Journal', style: TextStyle(fontWeight: FontWeight.bold, color: CivicHorizonTheme.primary)),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
 }
