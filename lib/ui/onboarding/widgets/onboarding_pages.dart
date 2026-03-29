@@ -558,22 +558,22 @@ class _OnboardingPage4State extends ConsumerState<OnboardingPage4> {
                       style: TextStyle(fontSize: 13, height: 1.5, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 20),
-                    _TermsSection(
+                    _termsSection(
                       '1. Data Processing and Local Storage',
                       'PRISM is an "offline-first" application. All personal data you input (Name, Program Type), your geolocated time logs (GPS coordinates, time-stamps), and task photos are processed and stored locally on your personal device using a secure SQLite database. This data is not synchronized to an external cloud database or LGU server.',
                     ),
                     const SizedBox(height: 16),
-                    _TermsSection(
+                    _termsSection(
                       '2. Data Privacy Act of 2012 Compliance',
                       'While the data remains on your device, we process this information adhering to the core principles of the Philippine Data Privacy Act of 2012 (R.A. 10173). We collect this data solely to fulfill the system\'s function of generating accurate Daily Time Records (Form 48) and Accomplishment Reports on your behalf.',
                     ),
                     const SizedBox(height: 16),
-                    _TermsSection(
+                    _termsSection(
                       '3. User Accountability for Input',
                       'You warrant that all time logs, task descriptions, and location data input into this app are truthful and accurate. Providing false, forged, or "buddy-punched" time entries is a violation of government integrity standards and may result in disciplinary action from your university or the LGU.',
                     ),
                     const SizedBox(height: 16),
-                    _TermsSection(
+                    _termsSection(
                       '4. Limit of Liability',
                       'PRISM is a productivity helper tool designed to format your records. The final generated PDFs require human verification and physical signatures from authorized LGU supervisors and HRMO/PESO staff to be considered valid for submission to CSC or DOLE.',
                     ),
@@ -592,7 +592,7 @@ class _OnboardingPage4State extends ConsumerState<OnboardingPage4> {
     );
   }
 
-  Widget _TermsSection(String title, String body) {
+  Widget _termsSection(String title, String body) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
