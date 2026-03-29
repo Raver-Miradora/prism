@@ -13,7 +13,7 @@ import '../main_shell.dart';
 class ProfileAvatar extends ConsumerWidget {
   final double size;
   final VoidCallback? onTapOverride;
-  const ProfileAvatar({super.key, this.size = 40, this.onTapOverride});
+  const ProfileAvatar({super.key, this.size = 44, this.onTapOverride});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
