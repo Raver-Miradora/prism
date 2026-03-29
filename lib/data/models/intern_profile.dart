@@ -1,3 +1,4 @@
+/// Represents the identity and organizational profile of an intern.
 class InternProfile {
   final String name;
   final String agencyOffice;
