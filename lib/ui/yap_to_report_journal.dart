@@ -145,7 +145,7 @@ class _YapToReportJournalState extends ConsumerState<YapToReportJournal> {
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
-                      color: isSelected ? context.colors.onPrimary.withOpacity(0.7) : context.colors.onSurfaceVariant,
+                      color: isSelected ? context.colors.onPrimary.withValues(alpha: 0.7) : context.colors.onSurfaceVariant,
                     ),
                   ),
                   Text(
@@ -328,7 +328,7 @@ class _YapToReportJournalState extends ConsumerState<YapToReportJournal> {
                 color: context.colors.surfaceContainerLowest,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2)),
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2)),
                 ],
               ),
               child: TextField(
@@ -354,9 +354,9 @@ class _YapToReportJournalState extends ConsumerState<YapToReportJournal> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
-                    color: _isSaving ? context.colors.surfaceContainerHigh : const Color(0xFFE8F5E9).withOpacity(0.1),
+                    color: _isSaving ? context.colors.surfaceContainerHigh : const Color(0xFFE8F5E9).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(16),
-                    border: _isSaving ? null : Border.all(color: const Color(0xFF2E7D32).withOpacity(0.5)),
+                    border: _isSaving ? null : Border.all(color: const Color(0xFF2E7D32).withValues(alpha: 0.5)),
                   ),
                   child: Text(
                     _isSaving ? 'SAVING...' : 'DRAFT SAVED',
@@ -395,7 +395,7 @@ class _YapToReportJournalState extends ConsumerState<YapToReportJournal> {
                 : CivicHorizonTheme.ctaGradient(context),
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 4)),
+              BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 10, offset: const Offset(0, 4)),
             ],
           ),
           child: Row(
