@@ -5,6 +5,8 @@ import '../data/repositories/intern_profile_repository.dart';
 import '../core/database/database_helper.dart';
 import 'settings_controller.dart';
 
+/// Represents the state of the onboarding flow, including user profile details,
+/// program selection, and transition progress.
 class OnboardingState {
   final String name;
   final String office;
@@ -61,6 +63,8 @@ class OnboardingState {
   }
 }
 
+/// Controller responsible for managing the onboarding process and persisting 
+/// initial user configuration to the local registry.
 class OnboardingController extends StateNotifier<OnboardingState> {
   final Ref _ref;
   final InternProfileRepository _profileRepo = InternProfileRepository();
