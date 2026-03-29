@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Encapsulates the visual state of the application, including the active 
+/// theme mode (light/dark) and the primary seed color for the theme scheme.
 class ThemeState {
   final ThemeMode themeMode;
   final Color seedColor;
@@ -22,11 +24,13 @@ class ThemeState {
   }
 }
 
+/// Controller responsible for managing and persisting user theme preferences 
+/// such as light/dark mode and dynamic color seeding.
 class ThemeController extends StateNotifier<ThemeState> {
   static const _themeModeKey = 'prism_theme_mode';
   static const _seedColorKey = 'prism_seed_color';
   
-  // Default Seed: PRISM Navy (from original CivicHorizonTheme)
+  /// Default Seed: PRISM Navy (from original CivicHorizonTheme)
   static const Color defaultSeed = Color(0xFF00003C);
 
   ThemeController() : super(ThemeState(themeMode: ThemeMode.system, seedColor: defaultSeed)) {
