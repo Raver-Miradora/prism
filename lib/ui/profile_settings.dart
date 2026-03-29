@@ -8,6 +8,7 @@ import 'package:path/path.dart' as p;
 import '../core/theme/civic_horizon_theme.dart';
 import '../core/database/database_helper.dart';
 import '../controllers/settings_controller.dart';
+import '../controllers/theme_controller.dart';
 import 'widgets/prism_drawer.dart';
 import 'widgets/profile_avatar.dart';
 
@@ -71,7 +72,7 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
       timeIn: _timeInController.text,
     );
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Settings successfully saved to registry.'), backgroundColor: CivicHorizonTheme.primary),
+      SnackBar(content: const Text('Settings successfully saved to registry.'), backgroundColor: context.colors.primary),
     );
   }
 
@@ -132,12 +133,12 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
     _populateControllers(state);
 
     return Scaffold(
-      backgroundColor: CivicHorizonTheme.background,
+      backgroundColor: context.colors.surface,
       drawer: const PrismDrawer(),
       body: SafeArea(
         child: Column(
           children: [
-            _buildTopAppBar(state),
+            _buildTopAppBar(context, state),
             Expanded(
               child: state.isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -146,13 +147,15 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        _buildEditorialHeader(),
+                        _buildEditorialHeader(context),
                         const SizedBox(height: 32),
-                        _buildProfileInformation(),
+                        _buildProfileInformation(context),
                         const SizedBox(height: 32),
-                        _buildDataManagement(),
+                        _buildPersonalization(context),
                         const SizedBox(height: 32),
-                        _buildCommitChangesButton(),
+                        _buildCommitChangesButton(context),
+                        const SizedBox(height: 32),
+                        _buildDataManagement(context),
                         const SizedBox(height: 80),
                       ],
                     ),
@@ -164,15 +167,14 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
     );
   }
 
-  Widget _buildTopAppBar(SettingsState state) {
-
+  Widget _buildTopAppBar(BuildContext context, SettingsState state) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       decoration: BoxDecoration(
-        color: CivicHorizonTheme.surface.withAlpha(216),
+        color: context.colors.surface.withAlpha(216),
         border: Border(
           bottom: BorderSide(
-            color: CivicHorizonTheme.surfaceContainerHigh.withAlpha(127),
+            color: context.colors.surfaceContainerHigh.withAlpha(127),
             width: 1,
           ),
         ),
@@ -184,20 +186,14 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
             children: [
               Builder(
                 builder: (ctx) => IconButton(
-                  icon: const Icon(Icons.menu, color: CivicHorizonTheme.primary),
+                  icon: Icon(Icons.menu, color: context.colors.primary),
                   onPressed: () => Scaffold.of(ctx).openDrawer(),
                 ),
               ),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 'PRISM',
-                style: TextStyle(
-                  fontFamily: 'Public Sans',
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                  color: CivicHorizonTheme.primary,
-                  letterSpacing: -1.0,
-                ),
+                style: context.text.headlineLarge?.copyWith(fontSize: 20, letterSpacing: -1.0),
               ),
             ],
           ),
@@ -210,53 +206,47 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
     );
   }
 
-  Widget _buildEditorialHeader() {
+  Widget _buildEditorialHeader(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: const [
+      children: [
         Text(
           'REGISTRY PROFILE',
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.bold,
             letterSpacing: 2.0,
-            color: CivicHorizonTheme.onSurfaceVariant,
+            color: context.colors.onSurfaceVariant,
           ),
         ),
-        SizedBox(height: 4),
+        const SizedBox(height: 4),
         Text(
           'Settings',
-          style: TextStyle(
-            fontFamily: 'Public Sans',
-            fontSize: 36,
-            fontWeight: FontWeight.w900,
-            color: CivicHorizonTheme.primary,
-            letterSpacing: -1.0,
-          ),
+          style: context.text.displayMedium?.copyWith(fontSize: 36, letterSpacing: -1.0),
         ),
       ],
     );
   }
 
-  Widget _buildProfileInformation() {
+  Widget _buildProfileInformation(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: CivicHorizonTheme.surfaceContainerLow,
+        color: context.colors.surfaceContainerLow,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildTextInput('INTERN FULL NAME', _nameController),
+          _buildTextInput(context, 'INTERN FULL NAME', _nameController),
           const SizedBox(height: 24),
           // Fix right overflow by utilizing a Wrap instead of Row with Expandeds for potentially narrow mobile screens
           Wrap(
             spacing: 24,
             runSpacing: 24,
             children: [
-              SizedBox(width: 320, child: _buildTextInput('GOVERNMENT AGENCY/OFFICE', _agencyController)),
-              SizedBox(width: 320, child: _buildTextInput('SUPERVISOR NAME', _supervisorController)),
+              SizedBox(width: 320, child: _buildTextInput(context, 'GOVERNMENT AGENCY/OFFICE', _agencyController)),
+              SizedBox(width: 320, child: _buildTextInput(context, 'SUPERVISOR NAME', _supervisorController)),
             ],
           ),
           const SizedBox(height: 32),
@@ -264,8 +254,8 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
             spacing: 24,
             runSpacing: 24,
             children: [
-              SizedBox(width: 320, child: _buildNumericInput('TOTAL TARGET HOURS', _hoursController, Icons.schedule)),
-              SizedBox(width: 320, child: _buildNumericInput('EXPECTED TIME IN', _timeInController, Icons.alarm)),
+              SizedBox(width: 320, child: _buildNumericInput(context, 'TOTAL TARGET HOURS', _hoursController, Icons.schedule)),
+              SizedBox(width: 320, child: _buildNumericInput(context, 'EXPECTED TIME IN', _timeInController, Icons.alarm)),
             ],
           ),
         ],
@@ -273,103 +263,189 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
     );
   }
 
-  Widget _buildTextInput(String label, TextEditingController controller) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.0,
-            color: CivicHorizonTheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: CivicHorizonTheme.onSurface,
-          ),
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: CivicHorizonTheme.surfaceContainerHigh,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            border: _inputBorder(),
-            enabledBorder: _inputBorder(),
-            focusedBorder: _focusedInputBorder(),
-          ),
-        ),
-      ],
-    );
-  }
+  Widget _buildPersonalization(BuildContext context) {
+    final themeState = ref.watch(themeControllerProvider);
+    final themeNotifier = ref.read(themeControllerProvider.notifier);
 
-  Widget _buildNumericInput(String label, TextEditingController controller, IconData icon) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.0,
-            color: CivicHorizonTheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: CivicHorizonTheme.onSurface,
-          ),
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: CivicHorizonTheme.surfaceContainerHigh,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            prefixIcon: Icon(icon, color: CivicHorizonTheme.onSurfaceVariant),
-            border: _inputBorder(),
-            enabledBorder: _inputBorder(),
-            focusedBorder: _focusedInputBorder(),
-          ),
-        ),
-      ],
-    );
-  }
+    final List<Color> seedColors = [
+      const Color(0xFF0D47A1), // Deep Blue
+      const Color(0xFF1B5E20), // Emerald Green
+      const Color(0xFF4A148C), // Royal Purple
+      const Color(0xFFBF360C), // Sunset Orange
+      const Color(0xFF006064), // Teal
+      const Color(0xFF311B92), // Indigo
+    ];
 
-  InputBorder _inputBorder() {
-    return const UnderlineInputBorder(
-      borderSide: BorderSide(color: Colors.black12, width: 2),
-      borderRadius: BorderRadius.zero,
-    );
-  }
-
-  InputBorder _focusedInputBorder() {
-    return const UnderlineInputBorder(
-      borderSide: BorderSide(color: CivicHorizonTheme.primary, width: 2),
-      borderRadius: BorderRadius.zero,
-    );
-  }
-
-  Widget _buildDataManagement() {
     return Container(
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: CivicHorizonTheme.surfaceContainerLowest,
+        color: context.colors.surfaceContainerLow,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: CivicHorizonTheme.outlineVariant.withAlpha(25)),
-        boxShadow: const [
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'PERSONALIZATION',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 2.0,
+              color: context.colors.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Accent Color Scheme',
+            style: context.text.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: context.colors.primary),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Select a primary color to seed the system theme',
+            style: TextStyle(fontSize: 12, color: context.colors.onSurfaceVariant),
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            height: 48,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: seedColors.length,
+              separatorBuilder: (context, index) => const SizedBox(width: 16),
+              itemBuilder: (context, index) {
+                final color = seedColors[index];
+                final isSelected = themeState.seedColor.value == color.value;
+
+                return GestureDetector(
+                  onTap: () => themeNotifier.setSeedColor(color),
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: isSelected ? context.colors.onSurface : Colors.transparent,
+                        width: 3,
+                      ),
+                      boxShadow: [
+                        if (isSelected)
+                          BoxShadow(
+                            color: color.withOpacity(0.4),
+                            blurRadius: 12,
+                            spreadRadius: 2,
+                          ),
+                      ],
+                    ),
+                    child: isSelected
+                        ? const Icon(Icons.check, color: Colors.white, size: 24)
+                        : null,
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTextInput(BuildContext context, String label, TextEditingController controller) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.0,
+            color: context.colors.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: context.colors.onSurface,
+          ),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: context.colors.surfaceContainerHigh,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            border: _inputBorder(context),
+            enabledBorder: _inputBorder(context),
+            focusedBorder: _focusedInputBorder(context),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNumericInput(BuildContext context, String label, TextEditingController controller, IconData icon) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.0,
+            color: context.colors.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: context.colors.onSurface,
+          ),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: context.colors.surfaceContainerHigh,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            prefixIcon: Icon(icon, color: context.colors.onSurfaceVariant),
+            border: _inputBorder(context),
+            enabledBorder: _inputBorder(context),
+            focusedBorder: _focusedInputBorder(context),
+          ),
+        ),
+      ],
+    );
+  }
+
+  InputBorder _inputBorder(BuildContext context) {
+    return UnderlineInputBorder(
+      borderSide: BorderSide(color: context.colors.outlineVariant, width: 2),
+      borderRadius: BorderRadius.zero,
+    );
+  }
+
+  InputBorder _focusedInputBorder(BuildContext context) {
+    return UnderlineInputBorder(
+      borderSide: BorderSide(color: context.colors.primary, width: 2),
+      borderRadius: BorderRadius.zero,
+    );
+  }
+
+  Widget _buildDataManagement(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: context.colors.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: context.colors.outlineVariant.withAlpha(25)),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x05000000),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
-            offset: Offset(0, 4),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -381,31 +457,26 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: CivicHorizonTheme.primary.withAlpha(12),
+                  color: context.colors.primary.withAlpha(12),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.storage, color: CivicHorizonTheme.primary),
+                child: Icon(Icons.storage, color: context.colors.primary),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
+                  children: [
                     Text(
                       'Data Management',
-                      style: TextStyle(
-                        fontFamily: 'Public Sans',
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: CivicHorizonTheme.primary,
-                      ),
+                      style: context.text.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: context.colors.primary),
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Text(
                       'System-wide backup and recovery protocols',
                       style: TextStyle(
                         fontSize: 14,
-                        color: CivicHorizonTheme.onSurfaceVariant,
+                        color: context.colors.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -415,27 +486,30 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
           ),
           const SizedBox(height: 24),
           // Fix Right Overflow: Stack buttons or wrap them
-          Wrap(
-            spacing: 16,
-            runSpacing: 16,
-            children: [
-              _buildDataButton(Icons.cloud_upload, 'Backup Database', onTap: _backupDatabase),
-              _buildDataButton(Icons.settings_backup_restore, 'Restore Database', onTap: _restoreDatabase),
-            ],
+          Center(
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 16,
+              runSpacing: 16,
+              children: [
+                _buildDataButton(context, Icons.cloud_upload, 'Backup Database', onTap: _backupDatabase),
+                _buildDataButton(context, Icons.settings_backup_restore, 'Restore Database', onTap: _restoreDatabase),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildDataButton(IconData icon, String label, {required VoidCallback onTap}) {
+  Widget _buildDataButton(BuildContext context, IconData icon, String label, {required VoidCallback onTap}) {
     return OutlinedButton.icon(
       onPressed: onTap,
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
-        side: const BorderSide(color: CivicHorizonTheme.outlineVariant, width: 2),
+        side: BorderSide(color: context.colors.outlineVariant, width: 2),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        foregroundColor: CivicHorizonTheme.onSurfaceVariant,
+        foregroundColor: context.colors.onSurfaceVariant,
       ),
       icon: Icon(icon, size: 20),
       label: Text(
@@ -445,17 +519,16 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
     );
   }
 
-  Widget _buildCommitChangesButton() {
-    return Align(
-      alignment: Alignment.centerRight,
+  Widget _buildCommitChangesButton(BuildContext context) {
+    return Center(
       child: ElevatedButton(
         onPressed: _commitChanges,
         style: ElevatedButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
-          backgroundColor: CivicHorizonTheme.primary,
-          foregroundColor: Colors.white,
+          backgroundColor: context.colors.primary,
+          foregroundColor: context.colors.onPrimary,
           elevation: 8,
-          shadowColor: CivicHorizonTheme.primary.withAlpha(127),
+          shadowColor: context.colors.primary.withAlpha(127),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
         child: const Text(
