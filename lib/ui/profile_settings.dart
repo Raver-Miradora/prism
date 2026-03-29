@@ -330,7 +330,7 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
                       boxShadow: [
                         if (isSelected)
                           BoxShadow(
-                            color: color.withOpacity(0.4),
+                            color: color.withValues(alpha: 0.4),
                             blurRadius: 12,
                             spreadRadius: 2,
                           ),
@@ -443,7 +443,7 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
         border: Border.all(color: context.colors.outlineVariant.withAlpha(25)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
