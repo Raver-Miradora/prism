@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/theme/civic_horizon_theme.dart';
 import '../../controllers/settings_controller.dart';
+import '../../controllers/theme_controller.dart';
 
 class PrismDrawer extends ConsumerWidget {
   const PrismDrawer({super.key});
@@ -14,7 +15,7 @@ class PrismDrawer extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('About PRISM', style: TextStyle(fontWeight: FontWeight.bold, color: CivicHorizonTheme.primary)),
+        title: Text('About PRISM', style: context.text.headlineMedium?.copyWith(color: context.colors.primary)),
         content: const SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -65,7 +66,7 @@ class PrismDrawer extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('CSC Form Guidelines', style: TextStyle(fontWeight: FontWeight.bold, color: CivicHorizonTheme.primary)),
+        title: Text('CSC Form Guidelines', style: context.text.headlineMedium?.copyWith(color: context.colors.primary)),
         content: const SingleChildScrollView(
           child: Text(
             '1. A maximum of 8 hours per day is credited.\n\n'
@@ -87,7 +88,7 @@ class PrismDrawer extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Frequently Asked Questions', style: TextStyle(fontWeight: FontWeight.bold, color: CivicHorizonTheme.primary)),
+        title: Text('Frequently Asked Questions', style: context.text.headlineMedium?.copyWith(color: context.colors.primary)),
         content: const SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -115,7 +116,7 @@ class PrismDrawer extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Report an Issue', style: TextStyle(fontWeight: FontWeight.bold, color: CivicHorizonTheme.primary)),
+        title: Text('Report an Issue', style: context.text.headlineMedium?.copyWith(color: context.colors.primary)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -123,13 +124,13 @@ class PrismDrawer extends ConsumerWidget {
             const Text('Encountered an error or need technical assistance? Reach out to the developer directly:'),
             const SizedBox(height: 16),
             ListTile(
-              leading: const Icon(Icons.email, color: CivicHorizonTheme.primary),
-              title: const Text('ravemiradora@gmail.com', style: TextStyle(fontSize: 13, decoration: TextDecoration.underline, color: CivicHorizonTheme.primary)),
+              leading: Icon(Icons.email, color: context.colors.primary),
+              title: Text('ravemiradora@gmail.com', style: TextStyle(fontSize: 13, decoration: TextDecoration.underline, color: context.colors.primary)),
               onTap: () => launchUrl(Uri.parse('mailto:ravemiradora@gmail.com')),
             ),
             ListTile(
-              leading: const Icon(Icons.facebook, color: CivicHorizonTheme.primary),
-              title: const Text('Raver Miradora', style: TextStyle(fontSize: 13, decoration: TextDecoration.underline, color: CivicHorizonTheme.primary)),
+              leading: Icon(Icons.facebook, color: context.colors.primary),
+              title: Text('Raver Miradora', style: TextStyle(fontSize: 13, decoration: TextDecoration.underline, color: context.colors.primary)),
               onTap: () => launchUrl(Uri.parse('https://www.facebook.com/ra.ve.52687506')),
             ),
           ],
@@ -144,6 +145,8 @@ class PrismDrawer extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(settingsProvider);
+    final themeState = ref.watch(themeControllerProvider);
+    final themeNotifier = ref.read(themeControllerProvider.notifier);
     final profile = state.profile;
     
     final bool hasImage = profile?.profileImagePath != null && profile!.profileImagePath!.isNotEmpty;
@@ -152,14 +155,14 @@ class PrismDrawer extends ConsumerWidget {
         : 'PRISM Intern';
 
     return Drawer(
-      backgroundColor: CivicHorizonTheme.background,
+      backgroundColor: context.colors.surface,
       child: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
               padding: const EdgeInsets.all(24),
-              decoration: const BoxDecoration(color: CivicHorizonTheme.surfaceContainerLow),
+              decoration: BoxDecoration(color: context.colors.surfaceContainerLow),
               child: Row(
                 children: [
                   Container(
@@ -167,7 +170,7 @@ class PrismDrawer extends ConsumerWidget {
                     width: 56,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: CivicHorizonTheme.primaryContainer,
+                      color: context.colors.primaryContainer,
                       image: hasImage 
                         ? DecorationImage(image: FileImage(File(profile.profileImagePath!)), fit: BoxFit.cover)
                         : null,
@@ -181,12 +184,12 @@ class PrismDrawer extends ConsumerWidget {
                       children: [
                         Text(
                           displayName,
-                          style: const TextStyle(fontFamily: 'Public Sans', fontWeight: FontWeight.bold, fontSize: 18, color: CivicHorizonTheme.primary, letterSpacing: -0.5),
+                          style: context.text.headlineSmall?.copyWith(fontSize: 18, color: context.colors.primary, letterSpacing: -0.5),
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const Text(
+                        Text(
                           'Active Registry',
-                          style: TextStyle(fontSize: 12, color: CivicHorizonTheme.onSurfaceVariant, letterSpacing: 1.0, fontWeight: FontWeight.w600),
+                          style: TextStyle(fontSize: 12, color: context.colors.onSurfaceVariant, letterSpacing: 1.0, fontWeight: FontWeight.w600),
                         ),
                       ],
                     ),
@@ -195,17 +198,43 @@ class PrismDrawer extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
-            _buildDrawerTile(Icons.info_outline, 'About PRISM', true, onTap: () => _showAboutDialog(context)),
-            _buildDrawerTile(Icons.policy_outlined, 'CSC Form Guidelines', false, onTap: () => _showGuidelinesDialog(context)),
-            _buildDrawerTile(Icons.bug_report_outlined, 'Report Issue', false, onTap: () => _showIssueDialog(context)),
-            _buildDrawerTile(Icons.help_outline, 'FAQ', false, onTap: () => _showFAQDialog(context)),
+            _buildDrawerTile(context, Icons.info_outline, 'About PRISM', true, onTap: () => _showAboutDialog(context)),
+            _buildDrawerTile(context, Icons.policy_outlined, 'CSC Form Guidelines', false, onTap: () => _showGuidelinesDialog(context)),
+            _buildDrawerTile(context, Icons.bug_report_outlined, 'Report Issue', false, onTap: () => _showIssueDialog(context)),
+            _buildDrawerTile(context, Icons.help_outline, 'FAQ', false, onTap: () => _showFAQDialog(context)),
             
-            const Divider(color: CivicHorizonTheme.surfaceContainerHigh, height: 32),
+            const Divider(height: 32),
+            
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.dark_mode, color: context.colors.onSurfaceVariant, size: 22),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Dark Mode',
+                        style: TextStyle(fontWeight: FontWeight.w600, color: context.colors.onSurfaceVariant),
+                      ),
+                    ],
+                  ),
+                  Switch(
+                    value: themeState.themeMode == ThemeMode.dark,
+                    onChanged: (val) => themeNotifier.setThemeMode(val ? ThemeMode.dark : ThemeMode.light),
+                    activeThumbColor: context.colors.primary,
+                  ),
+                ],
+              ),
+            ),
+
             _buildDrawerTile(
+              context,
               Icons.logout, 
               'Log Out', 
               false, 
-              color: CivicHorizonTheme.error,
+              color: context.colors.error,
               onTap: () {
                 SystemNavigator.pop();
               }
@@ -215,10 +244,10 @@ class PrismDrawer extends ConsumerWidget {
               padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text('VERSION 1.0.0', style: TextStyle(color: CivicHorizonTheme.outlineVariant, fontSize: 10, letterSpacing: 2.0, fontWeight: FontWeight.bold)),
-                  SizedBox(height: 4),
-                  Text('Camarines Sur, Philippines', style: TextStyle(color: CivicHorizonTheme.onSurfaceVariant, fontSize: 12)),
+                children: [
+                  Text('VERSION 1.0.0', style: TextStyle(color: context.colors.outline, fontSize: 10, letterSpacing: 2.0, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Text('Camarines Sur, Philippines', style: TextStyle(color: context.colors.onSurfaceVariant, fontSize: 12)),
                 ],
               ),
             ),
@@ -228,8 +257,8 @@ class PrismDrawer extends ConsumerWidget {
     );
   }
 
-  Widget _buildDrawerTile(IconData icon, String title, bool isActive, {Color? color, required VoidCallback onTap}) {
-    final c = color ?? (isActive ? CivicHorizonTheme.primary : CivicHorizonTheme.onSurfaceVariant);
+  Widget _buildDrawerTile(BuildContext context, IconData icon, String title, bool isActive, {Color? color, required VoidCallback onTap}) {
+    final c = color ?? (isActive ? context.colors.primary : context.colors.onSurfaceVariant);
     return ListTile(
       leading: Icon(icon, color: c),
       title: Text(
