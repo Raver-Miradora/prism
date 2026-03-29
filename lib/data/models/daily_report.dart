@@ -1,3 +1,5 @@
+/// Represents a daily journal entry, containing both informal "yap" notes
+/// and the AI-synthesized formal report.
 class DailyReport {
   final int? id;
   final String date;
