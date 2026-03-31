@@ -10,6 +10,8 @@ class TimeLog {
   final String photoPathIn;
   final String? photoPathOut;
   final int syncStatus;
+  final String status;
+  final String? remarks;
 
   TimeLog({
     this.id,
@@ -23,6 +25,8 @@ class TimeLog {
     required this.photoPathIn,
     this.photoPathOut,
     this.syncStatus = 0,
+    this.status = 'WORK',
+    this.remarks,
   });
 
   /// Factory constructor to create a [TimeLog] entirely from a Map (e.g., from SQLite)
@@ -39,6 +43,8 @@ class TimeLog {
       photoPathIn: map['photo_path_in'] as String,
       photoPathOut: map['photo_path_out'] as String?,
       syncStatus: map['sync_status'] as int,
+      status: map['status'] as String? ?? 'WORK',
+      remarks: map['remarks'] as String?,
     );
   }
 
@@ -56,6 +62,8 @@ class TimeLog {
       'photo_path_in': photoPathIn,
       'photo_path_out': photoPathOut,
       'sync_status': syncStatus,
+      'status': status,
+      'remarks': remarks,
     };
   }
 
@@ -72,6 +80,8 @@ class TimeLog {
     String? photoPathIn,
     String? photoPathOut,
     int? syncStatus,
+    String? status,
+    String? remarks,
   }) {
     return TimeLog(
       id: id ?? this.id,
@@ -85,6 +95,8 @@ class TimeLog {
       photoPathIn: photoPathIn ?? this.photoPathIn,
       photoPathOut: photoPathOut ?? this.photoPathOut,
       syncStatus: syncStatus ?? this.syncStatus,
+      status: status ?? this.status,
+      remarks: remarks ?? this.remarks,
     );
   }
 }
