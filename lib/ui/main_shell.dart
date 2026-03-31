@@ -34,14 +34,14 @@ class MainShell extends ConsumerWidget {
         index: currentIndex,
         children: screens,
       ),
-      bottomNavigationBar: _buildGlassBottomNavBar(currentIndex, ref),
+      bottomNavigationBar: _buildGlassBottomNavBar(currentIndex, ref, context),
     );
   }
 
-  Widget _buildGlassBottomNavBar(int currentIndex, WidgetRef ref) {
+  Widget _buildGlassBottomNavBar(int currentIndex, WidgetRef ref, BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.95),
+        color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.05),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
         boxShadow: const [
           BoxShadow(
