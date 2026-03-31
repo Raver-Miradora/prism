@@ -107,6 +107,22 @@ class YapJournalController extends StateNotifier<YapJournalState> {
       state = state.copyWith(reportStatus: AsyncValue.error(e, stack));
     }
   }
+
+  Future<void> updateFormalReport(String formalText) async {
+    final currentReport = state.reportStatus.valueOrNull;
+    if (currentReport == null) return;
+    
+    final dateStr = DateFormat('yyyy-MM-dd').format(state.selectedDate);
+    final updatedReport = DailyReport(
+      id: currentReport.id,
+      date: dateStr,
+      rawNotes: currentReport.rawNotes,
+      formalReport: formalText,
+    );
+
+    await _repo.saveReport(updatedReport);
+    state = state.copyWith(reportStatus: AsyncValue.data(updatedReport));
+  }
 }
 
 // Global provider for the Journal Engine
