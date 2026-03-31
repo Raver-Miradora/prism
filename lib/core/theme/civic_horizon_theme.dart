@@ -32,13 +32,13 @@ class CivicHorizonTheme {
 
   /// Helper for "Ghost Border"
   static Border get ghostBorder => Border.all(
-        color: outlineVariant.withOpacity(0.15),
+        color: outlineVariant.withValues(alpha: 0.15),
         width: 1.0,
       );
 
   static Border get ghostBorderBottom => Border(
         bottom: BorderSide(
-          color: outlineVariant.withOpacity(0.15),
+          color: outlineVariant.withValues(alpha: 0.15),
           width: 2.0,
         ),
       );
@@ -46,7 +46,7 @@ class CivicHorizonTheme {
   /// Helper for "Ambient Glow" (floating elements without harsh shadows)
   static List<BoxShadow> get ambientGlow => [
         BoxShadow(
-          color: onSurface.withOpacity(0.06),
+          color: onSurface.withValues(alpha: 0.06),
           blurRadius: 30,
           spreadRadius: 0,
           offset: const Offset(0, 4),
@@ -131,4 +131,9 @@ class CivicHorizonTheme {
       ),
     );
   }
+}
+
+extension ThemeContextExtension on BuildContext {
+  ColorScheme get colors => Theme.of(this).colorScheme;
+  TextTheme get text => Theme.of(this).textTheme;
 }
