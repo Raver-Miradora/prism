@@ -392,7 +392,7 @@ class _YapToReportJournalState extends ConsumerState<YapToReportJournal> {
           decoration: BoxDecoration(
             gradient: isLoading
                 ? const LinearGradient(colors: [Colors.grey, Colors.blueGrey])
-                : CivicHorizonTheme.ctaGradient(context),
+                : CivicHorizonTheme.ctaGradient,
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 10, offset: const Offset(0, 4)),
