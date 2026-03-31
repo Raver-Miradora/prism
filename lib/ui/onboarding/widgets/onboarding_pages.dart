@@ -38,7 +38,7 @@ class OnboardingPage1 extends StatelessWidget {
           Container(
             height: 280,
             decoration: BoxDecoration(
-              boxShadow: CivicHorizonTheme.staticAmbientGlow(),
+              boxShadow: CivicHorizonTheme.ambientGlow,
             ),
             child: Image.file(
               File(heroImagePath),
@@ -224,7 +224,7 @@ class _OnboardingPage2State extends ConsumerState<OnboardingPage2> {
             _buildInputLabel('OFFICIAL DEPARTMENT ASSIGNMENT', isRequired: true),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: departments.contains(state.office) ? state.office : 'Other',
+              initialValue: departments.contains(state.office) ? state.office : 'Other',
               decoration: _inputDecoration('Select assignment', Icons.business_outlined),
               isExpanded: true,
               icon: const Icon(Icons.keyboard_arrow_down, color: CivicHorizonTheme.primary),
