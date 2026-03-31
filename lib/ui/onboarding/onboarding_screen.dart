@@ -135,7 +135,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   opacity: isNextDisabled ? 0.5 : 1.0,
                   child: Container(
                     decoration: BoxDecoration(
-                      gradient: (isLastPage || isNextDisabled) ? null : CivicHorizonTheme.staticCtaGradient(),
+                      gradient: (isLastPage || isNextDisabled) ? null : CivicHorizonTheme.ctaGradient,
                       color: isLastPage 
                         ? (isNextDisabled ? CivicHorizonTheme.outlineVariant : CivicHorizonTheme.tertiaryFixedDim)
                         : (isNextDisabled ? CivicHorizonTheme.outlineVariant : null),
