@@ -41,7 +41,7 @@ class ThemeController extends StateNotifier<ThemeState> {
     final prefs = await SharedPreferences.getInstance();
     
     final modeIndex = prefs.getInt(_themeModeKey) ?? ThemeMode.system.index;
-    final colorValue = prefs.getInt(_seedColorKey) ?? defaultSeed.value;
+    final colorValue = prefs.getInt(_seedColorKey) ?? defaultSeed.toARGB32();
     
     state = ThemeState(
       themeMode: ThemeMode.values[modeIndex],
@@ -58,7 +58,7 @@ class ThemeController extends StateNotifier<ThemeState> {
   Future<void> setSeedColor(Color color) async {
     state = state.copyWith(seedColor: color);
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_seedColorKey, color.value);
+    await prefs.setInt(_seedColorKey, color.toARGB32());
   }
 
   void toggleDarkMode() {
