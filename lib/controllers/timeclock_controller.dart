@@ -122,4 +122,26 @@ class TimeclockController extends StateNotifier<TimeclockState> {
       state = state.copyWith(isLoading: false);
     }
   }
+
+  Future<void> logAttendanceStatus(DateTime date, String status, String remarks) async {
+    state = state.copyWith(isLoading: true);
+    final dateStr = date.toIso8601String().split('T')[0];
+    
+    final log = TimeLog(
+      date: dateStr,
+      timeIn: date.toIso8601String(),
+      latitudeIn: 0.0,
+      longitudeIn: 0.0,
+      photoPathIn: 'MANUAL_ENTRY',
+      status: status,
+      remarks: remarks,
+    );
+    
+    try {
+      await _repository.insertLog(log);
+      await _loadInitialState();
+    } catch (e) {
+      state = state.copyWith(isLoading: false);
+    }
+  }
 }
