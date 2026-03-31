@@ -175,7 +175,7 @@ class ReportsForm48 extends ConsumerWidget {
         duration: const Duration(milliseconds: 300),
         padding: const EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
-          gradient: isLoading ? const LinearGradient(colors: [Colors.grey, Colors.blueGrey]) : CivicHorizonTheme.ctaGradient(context),
+          gradient: isLoading ? const LinearGradient(colors: [Colors.grey, Colors.blueGrey]) : CivicHorizonTheme.ctaGradient,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
@@ -367,7 +367,7 @@ class ReportsForm48 extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
-                value: selectedStatus,
+                initialValue: selectedStatus,
                 decoration: const InputDecoration(
                   labelText: 'Attendance Status',
                   labelStyle: TextStyle(fontSize: 12),
