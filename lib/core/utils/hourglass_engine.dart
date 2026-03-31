@@ -8,10 +8,10 @@ class HourglassEngine {
   static double calculateActualHours(TimeLog log, InternSettings settings) {
     if (log.timeOut == null) return 0.0;
 
-    final In = DateTime.parse(log.timeIn);
-    final Out = DateTime.parse(log.timeOut!);
+    final inTime = DateTime.parse(log.timeIn);
+    final outTime = DateTime.parse(log.timeOut!);
     
-    final difference = Out.difference(In);
+    final difference = outTime.difference(inTime);
     double totalHours = difference.inMinutes / 60.0;
 
     // Standard Philippine Civil Service rule: Deduct lunch break (usually 1 hr)
@@ -27,17 +27,17 @@ class HourglassEngine {
   /// Calculates total minute-based tardiness.
   /// Compares actual `timeIn` against `expectedTimeIn` (e.g. "08:00")
   static int calculateLateDeductions(TimeLog log, String expectedInTime) {
-    final In = DateTime.parse(log.timeIn);
+    final inTime = DateTime.parse(log.timeIn);
     
     try {
       final formatter = DateFormat("HH:mm");
       final expectedTimeParsed = formatter.parse(expectedInTime);
       final expectedDateTime = DateTime(
-        In.year, In.month, In.day, 
+        inTime.year, inTime.month, inTime.day, 
         expectedTimeParsed.hour, expectedTimeParsed.minute
       );
 
-      final difference = In.difference(expectedDateTime);
+      final difference = inTime.difference(expectedDateTime);
       // Only count late minutes, not early arrivals
       if (difference.inMinutes > 0) {
         return difference.inMinutes;
