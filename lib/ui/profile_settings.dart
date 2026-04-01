@@ -9,6 +9,7 @@ import '../core/theme/civic_horizon_theme.dart';
 import '../core/database/database_helper.dart';
 import '../controllers/settings_controller.dart';
 import '../controllers/theme_controller.dart';
+import '../services/location_service.dart';
 import 'widgets/prism_drawer.dart';
 import 'widgets/profile_avatar.dart';
 
@@ -126,6 +127,38 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
     }
   }
 
+  Future<void> _updateBaseLocation() async {
+    final proceed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('UPDATE BASE LOCATION?'),
+        content: const Text('Ensure you are physically inside the LGU office before updating the precision base coordinates. This affects all future location verification.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('CANCEL')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(ctx).colorScheme.primary, foregroundColor: Theme.of(ctx).colorScheme.onPrimary),
+            onPressed: () => Navigator.pop(ctx, true), 
+            child: const Text('PROCEED')
+          ),
+        ]
+      )
+    );
+
+    if (proceed == true) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Capturing precision GPS...')));
+      try {
+        final loc = LocationService();
+        final pos = await loc.getCurrentPosition();
+        if (!mounted) return;
+        await ref.read(settingsProvider.notifier).updateBaseLocation(pos.latitude, pos.longitude);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Base Location successfully locked.'), backgroundColor: Colors.green));
+      } catch (e) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('GPS Error: $e'), backgroundColor: Colors.red));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(settingsProvider);
@@ -149,7 +182,7 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
                       children: [
                         _buildEditorialHeader(context),
                         const SizedBox(height: 32),
-                        _buildProfileInformation(context),
+                        _buildProfileInformation(context, state),
                         const SizedBox(height: 32),
                         _buildPersonalization(context),
                         const SizedBox(height: 32),
@@ -228,7 +261,7 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
     );
   }
 
-  Widget _buildProfileInformation(BuildContext context) {
+  Widget _buildProfileInformation(BuildContext context, SettingsState state) {
     return Container(
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
@@ -238,9 +271,31 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildTextInput(context, 'INTERN FULL NAME', _nameController),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+               Expanded(child: _buildTextInput(context, 'INTERN FULL NAME', _nameController)),
+               const SizedBox(width: 16),
+               Container(
+                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                 decoration: BoxDecoration(
+                   color: context.colors.tertiary.withAlpha(25),
+                   borderRadius: BorderRadius.circular(8),
+                   border: Border.all(color: context.colors.tertiary),
+                 ),
+                 child: Text(
+                   'PROGRAM: ${state.settings?.programType ?? 'OJT'}',
+                   style: TextStyle(
+                     fontSize: 12,
+                     fontWeight: FontWeight.w900,
+                     letterSpacing: 1.0,
+                     color: context.colors.tertiary,
+                   ),
+                 ),
+               ),
+            ],
+          ),
           const SizedBox(height: 24),
-          // Fix right overflow by utilizing a Wrap instead of Row with Expandeds for potentially narrow mobile screens
           Wrap(
             spacing: 24,
             runSpacing: 24,
@@ -257,6 +312,41 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
               SizedBox(width: 320, child: _buildNumericInput(context, 'TOTAL TARGET HOURS', _hoursController, Icons.schedule)),
               SizedBox(width: 320, child: _buildNumericInput(context, 'EXPECTED TIME IN', _timeInController, Icons.alarm)),
             ],
+          ),
+          const SizedBox(height: 32),
+          const Divider(),
+          const SizedBox(height: 16),
+          Row(
+             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+             children: [
+               Column(
+                 crossAxisAlignment: CrossAxisAlignment.start,
+                 children: [
+                   Text(
+                     'GPS LOCATION VERIFICATION',
+                     style: TextStyle(
+                       fontSize: 10,
+                       fontWeight: FontWeight.bold,
+                       letterSpacing: 1.0,
+                       color: context.colors.onSurfaceVariant,
+                     ),
+                   ),
+                   const SizedBox(height: 4),
+                   Text(
+                     state.settings?.officeLat != null ? 'Base Location Active' : 'No Base Location Set',
+                     style: TextStyle(
+                       fontSize: 14,
+                       color: context.colors.onSurface,
+                     ),
+                   ),
+                 ],
+               ),
+               OutlinedButton.icon(
+                 onPressed: _updateBaseLocation,
+                 icon: const Icon(Icons.location_on, size: 16),
+                 label: const Text('EDIT BASE LOCATION', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+               ),
+             ],
           ),
         ],
       ),
