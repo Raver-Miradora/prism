@@ -1,30 +1,36 @@
 class TimeLog {
   final int? id;
   final String date;
-  final String timeIn;
+  final String? timeIn;
+  final String? timeLunchOut;
+  final String? timeLunchIn;
   final String? timeOut;
-  final double latitudeIn;
-  final double longitudeIn;
+  final double? latitudeIn;
+  final double? longitudeIn;
   final double? latitudeOut;
   final double? longitudeOut;
-  final String photoPathIn;
+  final String? photoPathIn;
   final String? photoPathOut;
   final int syncStatus;
-  final String status;
+  final bool isFieldwork;
+  final String status; // WORK, ABSENT, EXCUSED
   final String? remarks;
 
   TimeLog({
     this.id,
     required this.date,
-    required this.timeIn,
+    this.timeIn,
+    this.timeLunchOut,
+    this.timeLunchIn,
     this.timeOut,
-    required this.latitudeIn,
-    required this.longitudeIn,
+    this.latitudeIn,
+    this.longitudeIn,
     this.latitudeOut,
     this.longitudeOut,
-    required this.photoPathIn,
+    this.photoPathIn,
     this.photoPathOut,
     this.syncStatus = 0,
+    this.isFieldwork = false,
     this.status = 'WORK',
     this.remarks,
   });
@@ -34,15 +40,18 @@ class TimeLog {
     return TimeLog(
       id: map['id'] as int?,
       date: map['date'] as String,
-      timeIn: map['time_in'] as String,
+      timeIn: map['time_in'] as String?,
+      timeLunchOut: map['time_lunch_out'] as String?,
+      timeLunchIn: map['time_lunch_in'] as String?,
       timeOut: map['time_out'] as String?,
-      latitudeIn: map['latitude_in'] as double,
-      longitudeIn: map['longitude_in'] as double,
+      latitudeIn: map['latitude_in'] as double?,
+      longitudeIn: map['longitude_in'] as double?,
       latitudeOut: map['latitude_out'] as double?,
       longitudeOut: map['longitude_out'] as double?,
-      photoPathIn: map['photo_path_in'] as String,
+      photoPathIn: map['photo_path_in'] as String?,
       photoPathOut: map['photo_path_out'] as String?,
       syncStatus: map['sync_status'] as int,
+      isFieldwork: (map['is_fieldwork'] as int?) == 1,
       status: map['status'] as String? ?? 'WORK',
       remarks: map['remarks'] as String?,
     );
@@ -54,6 +63,8 @@ class TimeLog {
       'id': id,
       'date': date,
       'time_in': timeIn,
+      'time_lunch_out': timeLunchOut,
+      'time_lunch_in': timeLunchIn,
       'time_out': timeOut,
       'latitude_in': latitudeIn,
       'longitude_in': longitudeIn,
@@ -62,6 +73,7 @@ class TimeLog {
       'photo_path_in': photoPathIn,
       'photo_path_out': photoPathOut,
       'sync_status': syncStatus,
+      'is_fieldwork': isFieldwork ? 1 : 0,
       'status': status,
       'remarks': remarks,
     };
@@ -72,6 +84,8 @@ class TimeLog {
     int? id,
     String? date,
     String? timeIn,
+    String? timeLunchOut,
+    String? timeLunchIn,
     String? timeOut,
     double? latitudeIn,
     double? longitudeIn,
@@ -80,6 +94,7 @@ class TimeLog {
     String? photoPathIn,
     String? photoPathOut,
     int? syncStatus,
+    bool? isFieldwork,
     String? status,
     String? remarks,
   }) {
@@ -87,6 +102,8 @@ class TimeLog {
       id: id ?? this.id,
       date: date ?? this.date,
       timeIn: timeIn ?? this.timeIn,
+      timeLunchOut: timeLunchOut ?? this.timeLunchOut,
+      timeLunchIn: timeLunchIn ?? this.timeLunchIn,
       timeOut: timeOut ?? this.timeOut,
       latitudeIn: latitudeIn ?? this.latitudeIn,
       longitudeIn: longitudeIn ?? this.longitudeIn,
@@ -95,6 +112,7 @@ class TimeLog {
       photoPathIn: photoPathIn ?? this.photoPathIn,
       photoPathOut: photoPathOut ?? this.photoPathOut,
       syncStatus: syncStatus ?? this.syncStatus,
+      isFieldwork: isFieldwork ?? this.isFieldwork,
       status: status ?? this.status,
       remarks: remarks ?? this.remarks,
     );
