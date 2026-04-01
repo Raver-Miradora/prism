@@ -36,4 +36,9 @@ class LocationService {
       desiredAccuracy: LocationAccuracy.bestForNavigation,
     );
   }
+
+  /// Returns the distance in meters between two coordinates.
+  double getDistanceBetween(double startLat, double startLng, double endLat, double endLng) {
+    return Geolocator.distanceBetween(startLat, startLng, endLat, endLng);
+  }
 }
