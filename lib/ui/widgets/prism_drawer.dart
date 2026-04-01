@@ -6,7 +6,6 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/theme/civic_horizon_theme.dart';
 import '../../controllers/settings_controller.dart';
-import '../../controllers/theme_controller.dart';
 
 class PrismDrawer extends ConsumerWidget {
   const PrismDrawer({super.key});
@@ -145,8 +144,6 @@ class PrismDrawer extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(settingsProvider);
-    final themeState = ref.watch(themeControllerProvider);
-    final themeNotifier = ref.read(themeControllerProvider.notifier);
     final profile = state.profile;
     
     final bool hasImage = profile?.profileImagePath != null && profile!.profileImagePath!.isNotEmpty;
@@ -205,29 +202,6 @@ class PrismDrawer extends ConsumerWidget {
             
             const Divider(height: 32),
             
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.dark_mode, color: context.colors.onSurfaceVariant, size: 22),
-                      const SizedBox(width: 12),
-                      Text(
-                        'Dark Mode',
-                        style: TextStyle(fontWeight: FontWeight.w600, color: context.colors.onSurfaceVariant),
-                      ),
-                    ],
-                  ),
-                  Switch(
-                    value: themeState.themeMode == ThemeMode.dark,
-                    onChanged: (val) => themeNotifier.setThemeMode(val ? ThemeMode.dark : ThemeMode.light),
-                    activeThumbColor: context.colors.primary,
-                  ),
-                ],
-              ),
-            ),
 
             _buildDrawerTile(
               context,
