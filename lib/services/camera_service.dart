@@ -6,6 +6,9 @@ import 'package:path/path.dart';
 class CameraException implements Exception {
   final String message;
   CameraException(this.message);
+
+  @override
+  String toString() => message;
 }
 
 class CameraService {
