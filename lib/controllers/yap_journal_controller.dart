@@ -83,45 +83,62 @@ class YapJournalController extends StateNotifier<YapJournalState> {
     final dateStr = DateFormat('yyyy-MM-dd').format(state.selectedDate);
     final previousData = state.reportStatus.valueOrNull;
 
-    // Use AsyncValue data but with isRefreshing or just raw AsyncLoading
     state = state.copyWith(reportStatus: const AsyncValue.loading());
 
     try {
       final formalText = await _aiService.synthesizeReport(rawNotes);
       
-      // Grab from repo directly to avoid race conditions with loading state
       final currentReport = await _repo.getReportByDate(dateStr);
       
       final updatedReport = DailyReport(
         id: currentReport?.id ?? previousData?.id,
         date: dateStr,
-        rawNotes: rawNotes,
-        formalReport: formalText, // Override with the newly generated Formal string!
+        rawNotes: formalText, // Inline overwrite
+        formalReport: null,
       );
 
       await _repo.saveReport(updatedReport);
-      
-      // Load back successfully
       await _loadReportForDate(state.selectedDate);
     } catch (e, stack) {
       state = state.copyWith(reportStatus: AsyncValue.error(e, stack));
     }
   }
 
+  /// Manually update and save the formal report text (editing)
   Future<void> updateFormalReport(String formalText) async {
-    final currentReport = state.reportStatus.valueOrNull;
-    if (currentReport == null) return;
-    
-    final dateStr = DateFormat('yyyy-MM-dd').format(state.selectedDate);
+    final report = state.reportStatus.valueOrNull;
+    if (report == null) return;
+
     final updatedReport = DailyReport(
-      id: currentReport.id,
-      date: dateStr,
-      rawNotes: currentReport.rawNotes,
+      id: report.id,
+      date: report.date,
+      rawNotes: report.rawNotes,
       formalReport: formalText,
     );
 
     await _repo.saveReport(updatedReport);
     state = state.copyWith(reportStatus: AsyncValue.data(updatedReport));
+  }
+
+  /// Aggregate all notes for the current month and summarize for Preview
+  Future<String?> retrieveMonthlySummary() async {
+    state = state.copyWith(reportStatus: const AsyncValue.loading());
+    try {
+      final reports = await _repo.getReportsForMonth(state.selectedDate.year, state.selectedDate.month);
+      final allNotes = reports.map((r) => r.rawNotes).where((n) => n.isNotEmpty).toList();
+      
+      if (allNotes.isEmpty) {
+         state = state.copyWith(reportStatus: AsyncValue.data(state.reportStatus.valueOrNull));
+         return null;
+      }
+      
+      final summary = await _aiService.synthesizeMonthlySummary(allNotes);
+      state = state.copyWith(reportStatus: AsyncValue.data(state.reportStatus.valueOrNull));
+      return summary;
+    } catch (e, stack) {
+      state = state.copyWith(reportStatus: AsyncValue.error(e, stack));
+      return null;
+    }
   }
 }
 
