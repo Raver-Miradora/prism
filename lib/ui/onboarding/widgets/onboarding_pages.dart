@@ -163,7 +163,7 @@ class _OnboardingPage2State extends ConsumerState<OnboardingPage2> {
             const SizedBox(height: 32),
 
             // Office GPS Capture
-            _buildInputLabel('OFFICE BASE LOCATION (REQUIRED FOR GEOFENCING)', isRequired: true),
+            _buildInputLabel('OFFICE BASE LOCATION (REQUIRED FOR LOCATION VERIFICATION)', isRequired: true),
             const SizedBox(height: 12),
             InkWell(
               onTap: _isCapturing ? null : _captureLocation,
@@ -207,6 +207,11 @@ class _OnboardingPage2State extends ConsumerState<OnboardingPage2> {
                   ],
                 ),
               ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              '⚠️ STOP: Only capture this location when you are physically standing inside your assigned LGU office.',
+              style: TextStyle(color: Colors.red, fontSize: 11, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 32),
 
@@ -371,7 +376,7 @@ class OnboardingPage3State extends ConsumerState<OnboardingPage3> {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: (state.programType == 'OJT' && !state.hasAdjustedHours) 
+                      color: (!state.hasAdjustedHours) 
                         ? Colors.orange 
                         : Colors.transparent,
                       width: 2,
@@ -385,9 +390,10 @@ class OnboardingPage3State extends ConsumerState<OnboardingPage3> {
                       suffixStyle: const TextStyle(fontWeight: FontWeight.bold, color: CivicHorizonTheme.primary),
                       filled: true,
                       fillColor: CivicHorizonTheme.surfaceContainerLow,
+                      hintText: 'e.g. 486',
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: CivicHorizonTheme.outlineVariant.withAlpha(50))),
                     ),
-                    controller: TextEditingController(text: state.targetHours.toString())..selection = TextSelection.fromPosition(TextPosition(offset: state.targetHours.toString().length)),
+                    controller: TextEditingController(text: state.targetHours?.toString() ?? '')..selection = TextSelection.fromPosition(TextPosition(offset: (state.targetHours?.toString() ?? '').length)),
                     onChanged: (val) {
                       final hrs = int.tryParse(val);
                       if (hrs != null) notifier.updateTargetHours(hrs);
@@ -395,11 +401,11 @@ class OnboardingPage3State extends ConsumerState<OnboardingPage3> {
                     style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: CivicHorizonTheme.primary),
                   ),
                 ),
-                if (state.programType == 'OJT' && !state.hasAdjustedHours)
+                if (!state.hasAdjustedHours)
                   const Padding(
                     padding: EdgeInsets.only(top: 8.0),
                     child: Text(
-                      'Please verify your curriculum hours before proceeding.',
+                      'Please verify your required target hours before proceeding.',
                       style: TextStyle(color: Colors.orange, fontSize: 11, fontWeight: FontWeight.bold),
                     ),
                   ),
