@@ -69,12 +69,15 @@ class SettingsController extends StateNotifier<SettingsState> {
     await _profileRepo.saveProfile(updatedProfile);
 
     final db = await DatabaseHelper.instance.database;
-    final updatedSettings = InternSettings(
+    final updatedSettings = state.settings?.copyWith(
+      targetHours: targetHours,
+      expectedTimeIn: timeIn,
+    ) ?? InternSettings(
       id: 1,
       targetHours: targetHours,
       expectedTimeIn: timeIn,
-      expectedTimeOut: state.settings?.expectedTimeOut ?? '17:00',
-      lunchBreakMins: state.settings?.lunchBreakMins ?? 60,
+      expectedTimeOut: '17:00',
+      lunchBreakMins: 60,
     );
     
     await db.update(
@@ -85,6 +88,22 @@ class SettingsController extends StateNotifier<SettingsState> {
     );
 
     state = SettingsState(profile: updatedProfile, settings: updatedSettings, isLoading: false);
+  }
+
+  Future<void> updateBaseLocation(double lat, double lng) async {
+    if (state.settings == null) return;
+    
+    state = state.copyWith(isLoading: true);
+    final updatedSettings = state.settings!.copyWith(officeLat: lat, officeLng: lng);
+    final db = await DatabaseHelper.instance.database;
+    await db.update(
+      'intern_settings',
+      updatedSettings.toMap(),
+      where: 'id = ?',
+      whereArgs: [1],
+    );
+    
+    state = SettingsState(profile: state.profile, settings: updatedSettings, isLoading: false);
   }
 }
 
