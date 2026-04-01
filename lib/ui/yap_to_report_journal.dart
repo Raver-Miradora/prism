@@ -7,12 +7,12 @@ import 'package:intl/intl.dart';
 import '../core/theme/civic_horizon_theme.dart';
 import '../controllers/yap_journal_controller.dart';
 import '../controllers/settings_controller.dart';
-import '../data/models/daily_report.dart';
 import '../data/repositories/daily_report_repository.dart';
 import '../services/pdf_service.dart';
 import '../core/utils/snackbar_utils.dart';
 import 'widgets/prism_drawer.dart';
 import 'widgets/profile_avatar.dart';
+import 'document_preview_screen.dart';
 
 class YapToReportJournal extends ConsumerStatefulWidget {
   const YapToReportJournal({super.key});
@@ -70,7 +70,6 @@ class _YapToReportJournalState extends ConsumerState<YapToReportJournal> {
   @override
   Widget build(BuildContext context) {
     final journalState = ref.watch(yapJournalProvider);
-    final activeReport = journalState.reportStatus.valueOrNull;
     final isLoading = journalState.reportStatus.isLoading;
 
     // Keep textField in sync lazily without interrupting typing
@@ -98,13 +97,9 @@ class _YapToReportJournalState extends ConsumerState<YapToReportJournal> {
                     const SizedBox(height: 16),
                     _buildRecentDaysStrip(context, journalState.selectedDate),
                     const SizedBox(height: 24),
-                    _buildNotesInput(context),
-                    const SizedBox(height: 32),
-                    _buildActionButtons(context, isLoading),
-                    const SizedBox(height: 32),
-                    _buildFormalOutputCard(context, activeReport, isLoading),
+                    _buildNotesInput(context, isLoading),
                     const SizedBox(height: 24),
-                    _buildExportMonthlyButton(context, journalState.selectedDate),
+                    _buildExportMonthlyButton(context, journalState.selectedDate, isLoading),
                     const SizedBox(height: 80), // Padding
                   ],
                 ),
@@ -163,10 +158,6 @@ class _YapToReportJournalState extends ConsumerState<YapToReportJournal> {
         },
       ),
     );
-  }
-
-  Widget _buildActionButtons(BuildContext context, bool isLoading) {
-    return _buildGenerateButton(context, isLoading);
   }
 
 
@@ -304,26 +295,47 @@ class _YapToReportJournalState extends ConsumerState<YapToReportJournal> {
     );
   }
 
-  Widget _buildNotesInput(BuildContext context) {
+  Widget _buildNotesInput(BuildContext context, bool isLoading) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 4.0, bottom: 8.0),
-          child: Text(
-            'DAILY TRANSCRIPT / INFORMAL NOTES',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 2.0,
-              color: context.colors.onSurfaceVariant,
-            ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'DAILY ACCOMPLISHMENTS',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2.0,
+                  color: context.colors.onSurfaceVariant,
+                ),
+              ),
+              if (isLoading)
+                const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+              else
+                IconButton(
+                  onPressed: () {
+                    if (_notesController.text.trim().isEmpty) return;
+                    FocusManager.instance.primaryFocus?.unfocus();
+                    ref.read(yapJournalProvider.notifier).generateFormalReport(_notesController.text).then((_) {
+                       if (context.mounted) SnackbarUtils.showSuccess(context, 'Accomplishments polished by AI.');
+                    });
+                  },
+                  icon: Icon(Icons.auto_awesome, color: context.colors.primary, size: 20),
+                  tooltip: 'Inline Polish',
+                  constraints: const BoxConstraints(),
+                  padding: EdgeInsets.zero,
+                )
+            ],
           ),
         ),
         Stack(
           children: [
             Container(
-              height: 320,
+              height: 400,
               decoration: BoxDecoration(
                 color: context.colors.surfaceContainerLowest,
                 borderRadius: BorderRadius.circular(12),
@@ -376,211 +388,38 @@ class _YapToReportJournalState extends ConsumerState<YapToReportJournal> {
     );
   }
 
-  Widget _buildGenerateButton(BuildContext context, bool isLoading) {
-    return Center(
-      child: GestureDetector(
-        onTap: isLoading
-            ? null
-            : () {
-                // Focus out logic
-                FocusManager.instance.primaryFocus?.unfocus();
-                ref.read(yapJournalProvider.notifier).generateFormalReport(_notesController.text);
-              },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
-          decoration: BoxDecoration(
-            gradient: isLoading
-                ? const LinearGradient(colors: [Colors.grey, Colors.blueGrey])
-                : CivicHorizonTheme.ctaGradient,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 10, offset: const Offset(0, 4)),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (isLoading)
-                const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                )
-              else
-                const Icon(Icons.auto_awesome, color: Colors.white),
-              const SizedBox(width: 12),
-              Text(
-                isLoading ? 'AI Engine Processing...' : 'Generate Formal Report',
-                style: const TextStyle(
-                  fontFamily: 'Public Sans',
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: -0.5,
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFormalOutputCard(BuildContext context, DailyReport? report, bool isLoading) {
-    bool hasFormalText = report?.formalReport != null && report!.formalReport!.isNotEmpty;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: context.colors.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.colors.outlineVariant.withAlpha(25)),
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            decoration: BoxDecoration(
-              color: context.colors.primary.withAlpha(12),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.description, color: context.colors.primary),
-                    const SizedBox(width: 8),
-                    Text(
-                      'AI Formal Output',
-                      style: TextStyle(fontFamily: 'Public Sans', fontWeight: FontWeight.bold, color: context.colors.primary),
-                    ),
-                  ],
-                ),
-                if (hasFormalText)
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: Icon(Icons.refresh, size: 20, color: context.colors.primary),
-                        onPressed: isLoading ? null : () => ref.read(yapJournalProvider.notifier).generateFormalReport(_notesController.text),
-                        tooltip: 'Regenerate',
-                      ),
-                      TextButton.icon(
-                        onPressed: () {
-                          Clipboard.setData(ClipboardData(text: _formalController.text));
-                          SnackbarUtils.showSuccess(context, 'Copied to clipboard!');
-                        },
-                        style: TextButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: context.colors.primary,
-                          side: BorderSide(color: context.colors.primary.withAlpha(25)),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        ),
-                        icon: const Icon(Icons.content_copy, size: 14),
-                        label: const Text('Copy text', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                      ),
-                    ],
-                  ),
-              ],
-            ),
-          ),
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 500),
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(24),
-            constraints: const BoxConstraints(minHeight: 240),
-            decoration: BoxDecoration(
-              color: context.colors.surface,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: isLoading
-                ? _buildLoadingSkeleton()
-                : hasFormalText
-                    ? Column(
-                        children: [
-                          TextField(
-                            controller: _formalController,
-                            maxLines: null,
-                            decoration: const InputDecoration(
-                              border: InputBorder.none,
-                              hintText: 'Edit your formal report...',
-                            ),
-                            style: TextStyle(fontSize: 14, color: context.colors.onSurface, height: 1.6),
-                          ),
-                          const SizedBox(height: 24),
-                          Center(
-                            child: ElevatedButton.icon(
-                              onPressed: () {
-                                ref.read(yapJournalProvider.notifier).updateFormalReport(_formalController.text);
-                                SnackbarUtils.showSuccess(context, 'Formal output updated and saved.');
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: context.colors.primary,
-                                foregroundColor: context.colors.onPrimary,
-                                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                              ),
-                              icon: const Icon(Icons.save, size: 18),
-                              label: const Text('Commit Changes', style: TextStyle(fontWeight: FontWeight.bold)),
-                            ),
-                          ),
-                        ],
-                      )
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.only(left: 16),
-                            decoration: BoxDecoration(
-                              border: Border(left: BorderSide(color: context.colors.primaryContainer, width: 4)),
-                            ),
-                            child: const Text(
-                              'Formal report will be synthesized here based on your informal notes above...',
-                              style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey, height: 1.5),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          _buildLoadingSkeleton(),
-                        ],
-                      ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLoadingSkeleton() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(height: 16, width: double.infinity, decoration: BoxDecoration(color: Colors.grey.withAlpha(40), borderRadius: BorderRadius.circular(4))),
-        const SizedBox(height: 12),
-        Container(height: 16, width: 220, decoration: BoxDecoration(color: Colors.grey.withAlpha(40), borderRadius: BorderRadius.circular(4))),
-        const SizedBox(height: 12),
-        Container(height: 16, width: 300, decoration: BoxDecoration(color: Colors.grey.withAlpha(40), borderRadius: BorderRadius.circular(4))),
-      ],
-    );
-  }
-  Widget _buildExportMonthlyButton(BuildContext context, DateTime selectedDate) {
+  Widget _buildExportMonthlyButton(BuildContext context, DateTime selectedDate, bool isLoading) {
     return Center(
       child: OutlinedButton.icon(
-        onPressed: () async {
-          final repo = DailyReportRepository();
-          final reports = await repo.getReportsForMonth(selectedDate.year, selectedDate.month);
-          final settingsState = ref.read(settingsProvider);
-          final profile = settingsState.profile;
-          if (profile == null) return;
+        onPressed: isLoading ? null : () async {
+          final summary = await ref.read(yapJournalProvider.notifier).retrieveMonthlySummary();
+          if (!context.mounted) return;
+          if (summary == null || summary.isEmpty) {
+             SnackbarUtils.showError(context, "No completed entries found for this month.");
+             return;
+          }
+          
+          Navigator.push(context, MaterialPageRoute(
+            builder: (ctx) => DocumentPreviewScreen(
+              title: 'Monthly Accomplishments',
+              initialContent: summary,
+              onApprove: (docCtx, finalSummary) async {
+                  final repo = DailyReportRepository();
+                  final reports = await repo.getReportsForMonth(selectedDate.year, selectedDate.month);
+                  final settingsState = ref.read(settingsProvider);
+                  final profile = settingsState.profile;
+                  if (profile == null) return;
 
-          await PdfService.generateAndPrintMonthlyReport(
-            reports,
-            profile,
-            selectedDate.year,
-            selectedDate.month,
-          );
+                  await PdfService.generateAndPrintMonthlyReport(
+                    reports,
+                    profile,
+                    selectedDate.year,
+                    selectedDate.month,
+                    customSummaryBullets: finalSummary,
+                  );
+              }
+            )
+          ));
         },
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
