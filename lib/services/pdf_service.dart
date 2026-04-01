@@ -11,6 +11,29 @@ import '../data/models/daily_report.dart';
 import '../core/utils/hourglass_engine.dart';
 
 class PdfService {
+  static pw.Widget _bulletCell(String text) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.only(bottom: 4),
+      child: pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Container(
+            margin: const pw.EdgeInsets.only(top: 4, right: 6),
+            width: 3,
+            height: 3,
+            decoration: const pw.BoxDecoration(
+              color: PdfColors.black,
+              shape: pw.BoxShape.circle,
+            ),
+          ),
+          pw.Expanded(
+            child: pw.Text(text, style: const pw.TextStyle(fontSize: 9, lineSpacing: 2)),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ─────────────────────────────────────────────────────────────────
   // MONTHLY ACCOMPLISHMENT REPORT PDF
   // ─────────────────────────────────────────────────────────────────
@@ -19,19 +42,20 @@ class PdfService {
     InternProfile profile,
     int year,
     int month,
+    {String? customSummaryBullets}
   ) async {
     final pdf = pw.Document();
     final monthName = DateFormat('MMMM yyyy').format(DateTime(year, month));
 
-    // Filter reports that have formal text
-    final formalReports = reports
-        .where((r) => r.formalReport != null && r.formalReport!.isNotEmpty)
+    // Filter reports that have notes
+    final activeReports = reports
+        .where((r) => r.rawNotes.isNotEmpty)
         .toList();
 
-    // Collect all bullets from all formal reports
+    // Collect all bullets from all notes
     final List<String> allBullets = [];
-    for (final r in formalReports) {
-      final lines = r.formalReport!
+    for (final r in activeReports) {
+      final lines = r.rawNotes
           .split('\n')
           .map((l) => l.trim())
           .where((l) => l.isNotEmpty)
@@ -39,7 +63,27 @@ class PdfService {
       allBullets.addAll(lines);
     }
 
-    // Determine date range
+    final List<String> summaryBullets = [];
+    if (customSummaryBullets != null && customSummaryBullets.isNotEmpty) {
+      summaryBullets.addAll(
+        customSummaryBullets.split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty)
+      );
+    } else if (allBullets.isNotEmpty) {
+      if (allBullets.length <= 5) {
+        summaryBullets.addAll(allBullets);
+      } else {
+        final double step = (allBullets.length - 1) / 4.0;
+        for (int i = 0; i < 5; i++) {
+          final int index = (i * step).round().clamp(0, allBullets.length - 1);
+          final bullet = allBullets[index];
+          if (!summaryBullets.contains(bullet)) {
+             summaryBullets.add(bullet);
+          }
+        }
+      }
+    }
+
+    // Determine date range label
     final firstDay = 1;
     final lastDay = DateTime(year, month + 1, 0).day;
     final periodLabel = '${DateFormat('MMMM').format(DateTime(year, month))} $firstDay-$lastDay, $year';
@@ -95,17 +139,13 @@ class PdfService {
                     ),
                     pw.Padding(
                       padding: const pw.EdgeInsets.all(8),
-                      child: allBullets.isEmpty
-                          ? pw.Text('No formal reports generated for this period.', style: const pw.TextStyle(fontSize: 9))
+                      child: summaryBullets.isEmpty
+                          ? pw.Text('No reports generated for this period.', style: const pw.TextStyle(fontSize: 9))
                           : pw.Column(
                               crossAxisAlignment: pw.CrossAxisAlignment.start,
-                              children: allBullets.take(5).map((b) {
-                                // Ensure bullet format
-                                final text = b.startsWith('\u2022') ? b : '\u2022 $b';
-                                return pw.Padding(
-                                  padding: const pw.EdgeInsets.only(bottom: 4),
-                                  child: pw.Text(text, style: const pw.TextStyle(fontSize: 9, lineSpacing: 2)),
-                                );
+                              children: summaryBullets.map((b) {
+                                final cleanText = b.replaceFirst('\u2022', '').trim();
+                                return _bulletCell(cleanText);
                               }).toList(),
                             ),
                     ),
@@ -114,62 +154,86 @@ class PdfService {
               ],
             ),
 
+            // Certification section - Right Aligned
+            pw.Align(
+              alignment: pw.Alignment.centerRight,
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.center,
+                children: [
+                   pw.Text('Prepared & submitted by;', style: const pw.TextStyle(fontSize: 10)),
+                   pw.SizedBox(height: 24),
+                   pw.Container(
+                    width: 200,
+                    decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide())),
+                  ),
+                  pw.SizedBox(height: 2),
+                  pw.Text(
+                    profile.name.isEmpty ? '' : profile.name.toUpperCase(),
+                    style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+                  ),
+                ],
+              ),
+            ),
             pw.SizedBox(height: 32),
 
-            // Certification section
-            pw.Text('Prepared & submitted by;', style: const pw.TextStyle(fontSize: 10)),
-            pw.SizedBox(height: 24),
-            pw.Center(
-              child: pw.Container(
-                width: 200,
-                decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide())),
-              ),
-            ),
-            pw.SizedBox(height: 4),
-            pw.Center(
-              child: pw.Text(
-                profile.name.isEmpty ? '' : profile.name.toUpperCase(),
-                style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+            // Noted by - Left Aligned
+            pw.Align(
+              alignment: pw.Alignment.centerLeft,
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text('Noted by:', style: const pw.TextStyle(fontSize: 10)),
+                  pw.SizedBox(height: 24),
+                  pw.Column(
+                    children: [
+                      pw.Container(
+                        width: 200,
+                        decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide())),
+                      ),
+                      pw.SizedBox(height: 2),
+                      pw.Text(
+                        profile.supervisorName.isEmpty ? '' : profile.supervisorName.toUpperCase(),
+                        style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+                      ),
+                      pw.Text('OFFICE HEAD', style: const pw.TextStyle(fontSize: 9)),
+                    ],
+                  ),
+                ],
               ),
             ),
             pw.SizedBox(height: 32),
 
-            pw.Text('Noted by:', style: const pw.TextStyle(fontSize: 10)),
-            pw.SizedBox(height: 24),
-            pw.Center(
-              child: pw.Container(
-                width: 200,
-                decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide())),
+            // School and Course - Right Aligned
+            pw.Align(
+              alignment: pw.Alignment.centerRight,
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.end,
+                children: [
+                  pw.Row(
+                    mainAxisSize: pw.MainAxisSize.min,
+                    children: [
+                      pw.Text('NAME OF SCHOOL: ', style: const pw.TextStyle(fontSize: 10)),
+                      pw.Container(
+                        width: 150,
+                        decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide())),
+                        child: pw.Text(' ', style: const pw.TextStyle(fontSize: 10)),
+                      ),
+                    ],
+                  ),
+                  pw.SizedBox(height: 8),
+                  pw.Row(
+                    mainAxisSize: pw.MainAxisSize.min,
+                    children: [
+                      pw.Text('COURSE: ', style: const pw.TextStyle(fontSize: 10, letterSpacing: 0.5)),
+                      pw.Container(
+                        width: 150,
+                        decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide())),
+                        child: pw.Text(' ', style: const pw.TextStyle(fontSize: 10)),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ),
-            pw.SizedBox(height: 4),
-            pw.Center(
-              child: pw.Text(
-                profile.supervisorName.isEmpty ? '' : profile.supervisorName.toUpperCase(),
-                style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
-              ),
-            ),
-            pw.Center(child: pw.Text('OFFICE HEAD', style: const pw.TextStyle(fontSize: 9))),
-            pw.SizedBox(height: 24),
-
-            pw.Row(
-              children: [
-                pw.Text('NAME OF SCHOOL: ', style: const pw.TextStyle(fontSize: 10)),
-                pw.Expanded(child: pw.Container(
-                  decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide())),
-                  child: pw.Text(' ', style: const pw.TextStyle(fontSize: 10)),
-                )),
-              ],
-            ),
-            pw.SizedBox(height: 8),
-            pw.Row(
-              children: [
-                pw.Text('COURSE: ', style: const pw.TextStyle(fontSize: 10)),
-                pw.Expanded(child: pw.Container(
-                  decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide())),
-                  child: pw.Text(' ', style: const pw.TextStyle(fontSize: 10)),
-                )),
-              ],
             ),
           ];
         },
@@ -183,7 +247,7 @@ class PdfService {
   }
 
   // ─────────────────────────────────────────────────────────────────
-  // CSC FORM 48 — DAILY TIME RECORD PDF (pixel-perfect replica)
+  // CSC FORM 48 — DAILY TIME RECORD PDF (Two-copy layout)
   // ─────────────────────────────────────────────────────────────────
   static Future<void> generateAndPrintForm48(
     List<TimeLog> logs, 
@@ -220,94 +284,18 @@ class PdfService {
     final monthName = DateFormat('MMMM yyyy').format(DateTime(year, month));
     final daysInMonth = DateTime(year, month + 1, 0).day;
 
-    final bold = pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8);
-    final normal = const pw.TextStyle(fontSize: 8);
-    final smallBold = pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 7);
-    final small = const pw.TextStyle(fontSize: 7);
-
     pdf.addPage(
       pw.Page(
         pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(28),
+        margin: const pw.EdgeInsets.all(24),
         build: (pw.Context context) {
-          return pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.center,
+          // Wrap two identical DTRs in a Row with a Spacer
+          return pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
-              pw.Text('Civil Service Form No. 48', style: pw.TextStyle(fontSize: 9, fontStyle: pw.FontStyle.italic)),
-              pw.SizedBox(height: 6),
-              pw.Text('DAILY TIME RECORD', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14)),
-              pw.SizedBox(height: 8),
-              
-              // Name
-              pw.Text('-----o0o-----', style: const pw.TextStyle(fontSize: 10)),
-              pw.SizedBox(height: 4),
-              pw.Text(
-                profile.name.isEmpty ? '____________________________' : profile.name.toUpperCase(), 
-                style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)
-              ),
-              pw.Text('(Name)', style: const pw.TextStyle(fontSize: 8)),
-              pw.SizedBox(height: 8),
-              
-              // Month and official hours
-              pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.RichText(text: pw.TextSpan(children: [
-                    pw.TextSpan(text: 'For the month of  ', style: normal),
-                    pw.TextSpan(text: monthName, style: bold),
-                  ])),
-                  pw.Text('Official hours for arrival and departure', style: normal),
-                ],
-              ),
-              pw.SizedBox(height: 4),
-              pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.end,
-                children: [
-                  pw.Text('Regular days: ${settings.expectedTimeIn} - ${settings.expectedTimeOut}    ', style: small),
-                  pw.Text('Saturdays: ________', style: small),
-                ],
-              ),
-              pw.SizedBox(height: 8),
-
-              // The full CSC Form 48 grid
-              _buildCSCForm48Grid(logMap, settings, year, month, daysInMonth),
-              
-              pw.SizedBox(height: 12),
-              pw.Padding(
-                padding: const pw.EdgeInsets.symmetric(horizontal: 16),
-                child: pw.Text(
-                  'I CERTIFY on my honor that the above is a true and correct report of the hours of work performed, '
-                  'record of which was made daily at the time of arrival and departure from office.',
-                  textAlign: pw.TextAlign.justify,
-                  style: const pw.TextStyle(fontSize: 8),
-                ),
-              ),
-              pw.SizedBox(height: 20),
-              
-              // Intern signature
-              pw.Container(
-                width: 180,
-                decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide())),
-              ),
-              pw.SizedBox(height: 2),
-              pw.Text(
-                profile.name.isEmpty ? '' : profile.name.toUpperCase(),
-                style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
-              ),
-              pw.SizedBox(height: 16),
-              
-              pw.Text('VERIFIED as to the prescribed office hours:', style: const pw.TextStyle(fontSize: 8)),
-              pw.SizedBox(height: 20),
-              pw.Container(
-                width: 180,
-                decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide())),
-              ),
-              pw.SizedBox(height: 2),
-              pw.Text(
-                profile.supervisorName.isEmpty ? '' : profile.supervisorName.toUpperCase(), 
-                style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9)
-              ),
-              pw.Text('In Charge', style: const pw.TextStyle(fontSize: 8)),
+              _buildSingleForm48Copy(logMap, profile, settings, monthName, daysInMonth, year, month),
+              pw.SizedBox(width: 20), // Vertical Divider space
+              _buildSingleForm48Copy(logMap, profile, settings, monthName, daysInMonth, year, month),
             ],
           );
         },
@@ -317,6 +305,110 @@ class PdfService {
     return pdf.save();
   }
 
+  static pw.Widget _buildSingleForm48Copy(
+    Map<int, TimeLog> logMap,
+    InternProfile profile,
+    InternSettings settings,
+    String monthName,
+    int daysInMonth,
+    int year,
+    int month,
+  ) {
+    final normal = const pw.TextStyle(fontSize: 7);
+    final bold = pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 7);
+    final titleBold = pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11);
+
+    return pw.Container(
+      width: 250, // Perfect for half A4 width
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.center,
+        children: [
+          pw.Text('Civil Service Form No. 48', style: pw.TextStyle(fontSize: 8, fontStyle: pw.FontStyle.italic)),
+          pw.SizedBox(height: 4),
+          pw.Text('DAILY TIME RECORD', style: titleBold),
+          pw.SizedBox(height: 4),
+          pw.Text('-----o0o-----', style: normal),
+          pw.SizedBox(height: 6),
+          
+          pw.Text(
+            profile.name.isEmpty ? '____________________________' : profile.name.toUpperCase(), 
+            style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)
+          ),
+          pw.Text('(Name)', style: const pw.TextStyle(fontSize: 7)),
+          pw.SizedBox(height: 10),
+          
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.RichText(text: pw.TextSpan(children: [
+                pw.TextSpan(text: 'For the month of  ', style: normal),
+                pw.TextSpan(text: monthName, style: bold),
+              ])),
+            ],
+          ),
+          pw.SizedBox(height: 2),
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.start,
+            children: [
+              pw.Text('Official hours for arrival and departure', style: normal),
+            ],
+          ),
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.start,
+            children: [
+              pw.Text('Regular days: ${settings.expectedTimeIn}-${settings.expectedTimeOut}', style: normal),
+              pw.Text('  Saturdays: ________', style: normal),
+            ],
+          ),
+          pw.SizedBox(height: 8),
+
+          _buildCSCForm48Grid(logMap, settings, year, month, daysInMonth),
+          
+          pw.SizedBox(height: 12),
+          pw.Padding(
+            padding: const pw.EdgeInsets.symmetric(horizontal: 4),
+            child: pw.Text(
+              'I CERTIFY on my honor that the above is a true and correct report of the hours of work performed, '
+              'record of which was made daily at the time of arrival and departure from office.',
+              textAlign: pw.TextAlign.justify,
+              style: const pw.TextStyle(fontSize: 7),
+            ),
+          ),
+          pw.SizedBox(height: 16),
+          
+          pw.Container(
+            width: 160,
+            decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide())),
+          ),
+          pw.SizedBox(height: 2),
+          pw.Text(
+            profile.name.isEmpty ? '' : profile.name.toUpperCase(),
+            style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
+          ),
+          pw.SizedBox(height: 12),
+          
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.start,
+            children: [
+              pw.Text('VERIFIED as to the prescribed office hours:', style: const pw.TextStyle(fontSize: 7)),
+            ],
+          ),
+          pw.SizedBox(height: 16),
+          pw.Container(
+            width: 160,
+            decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide())),
+          ),
+          pw.SizedBox(height: 2),
+          pw.Text(
+            profile.supervisorName.isEmpty ? '' : profile.supervisorName.toUpperCase(), 
+            style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8)
+          ),
+          pw.Text('In Charge', style: const pw.TextStyle(fontSize: 7)),
+        ],
+      ),
+    );
+  }
+
   static pw.Widget _buildCSCForm48Grid(
     Map<int, TimeLog> logMap, 
     InternSettings settings, 
@@ -324,37 +416,35 @@ class PdfService {
     int month,
     int daysInMonth,
   ) {
-    double totalRendered = 0.0;
     int totalUndertimeHours = 0;
     int totalUndertimeMins = 0;
 
-    final hBold = pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 7);
-    final cellStyle = const pw.TextStyle(fontSize: 7);
+    final hBold = pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 6);
+    final cellStyle = const pw.TextStyle(fontSize: 6.5);
 
     pw.Widget cell(String text, {pw.TextStyle? style}) {
       return pw.Padding(
-        padding: const pw.EdgeInsets.symmetric(vertical: 2, horizontal: 1),
+        padding: const pw.EdgeInsets.symmetric(vertical: 1.5, horizontal: 1),
         child: pw.Center(child: pw.Text(text, style: style ?? cellStyle, textAlign: pw.TextAlign.center)),
       );
     }
 
     final rows = <pw.TableRow>[];
 
-    // Multi-row header matching CSC Form 48 exactly
-    // Row 1: Day | A.M. (colspan 2) | P.M. (colspan 2) | Undertime (colspan 2)
+    // Header 1
     rows.add(pw.TableRow(
       children: [
         cell('Day', style: hBold),
-        pw.Container(child: pw.Center(child: pw.Text('A.M.', style: hBold, textAlign: pw.TextAlign.center))),
-        pw.SizedBox(), // AM second col merged visually
-        pw.Container(child: pw.Center(child: pw.Text('P.M.', style: hBold, textAlign: pw.TextAlign.center))),
-        pw.SizedBox(), // PM second col merged visually
-        pw.Container(child: pw.Center(child: pw.Text('Undertime', style: hBold, textAlign: pw.TextAlign.center))),
-        pw.SizedBox(), // Undertime second col
+        pw.Container(height: 12, child: pw.Center(child: pw.Text('A.M.', style: hBold))),
+        pw.SizedBox(), 
+        pw.Container(height: 12, child: pw.Center(child: pw.Text('P.M.', style: hBold))),
+        pw.SizedBox(),
+        pw.Container(height: 12, child: pw.Center(child: pw.Text('Undertime', style: hBold))),
+        pw.SizedBox(),
       ],
     ));
 
-    // Row 2: Sub-headers
+    // Header 2
     rows.add(pw.TableRow(
       children: [
         cell(''),
@@ -367,10 +457,10 @@ class PdfService {
       ],
     ));
 
-    // Day rows
+    final timeFormatter = DateFormat('hh:mm');
+
     for (int day = 1; day <= daysInMonth; day++) {
       final log = logMap[day];
-      bool isWeekend = DateTime(year, month, day).weekday > 5;
 
       String amArr = '';
       String amDep = '';
@@ -380,41 +470,87 @@ class PdfService {
       String utMins = '';
 
       if (log != null) {
-        final timeIn = DateTime.parse(log.timeIn);
-        
-        // AM arrival
-        amArr = DateFormat('hh:mm').format(timeIn);
+        final isWork = log.status == 'WORK';
+        final isFullHoliday = log.status == 'HOLIDAY_FULL';
+        final isAMHoliday = log.status == 'HOLIDAY_AM';
+        final isPMHoliday = log.status == 'HOLIDAY_PM';
 
-        if (log.timeOut != null) {
-          final timeOut = DateTime.parse(log.timeOut!);
-          
-          // Simple split: if clocked in before noon -> AM arrival, PM departure
-          // Assume AM departure = 12:00 PM (lunch), PM arrival = 1:00 PM (after lunch)
-          amDep = '12:00';
-          pmArr = '1:00';
-          pmDep = DateFormat('hh:mm').format(timeOut);
-
-          final hoursVal = HourglassEngine.calculateActualHours(log, settings);
-          final lateVal = HourglassEngine.calculateLateDeductions(log, settings.expectedTimeIn);
-          
-          totalRendered += hoursVal;
-
-          if (lateVal > 0) {
-            final h = lateVal ~/ 60;
-            final m = lateVal % 60;
-            totalUndertimeHours += h;
-            totalUndertimeMins += m;
-            if (h > 0) utHrs = '$h';
-            if (m > 0) utMins = '$m';
-          }
-        } else {
-          // Still clocked in
-          amDep = '';
-          pmArr = '';
-          pmDep = '';
+        if (isFullHoliday) {
+          amArr = 'HOLIDAY';
+          amDep = log.remarks ?? '';
+        } else if (isAMHoliday) {
+          amArr = 'HOLIDAY';
+          amDep = log.remarks ?? '';
+        } else if (isPMHoliday) {
+          pmArr = 'HOLIDAY';
+          pmDep = log.remarks ?? '';
+        } else if (log.status == 'ABSENT' || log.status == 'EXCUSED') {
+          amArr = log.status;
+          amDep = log.remarks ?? '';
         }
-      } else if (isWeekend) {
-        // Leave weekend rows blank (CSC standard)
+        
+        // If it's a work log (or has work log data accompanying a half-holiday)
+        if (isWork || log.timeIn != null) {
+          final timeIn = log.timeIn != null ? DateTime.parse(log.timeIn!) : null;
+          
+          if (timeIn != null) {
+             final actualHours = log.timeOut != null 
+                ? HourglassEngine.calculateActualHours(log, settings) 
+                : 0.0;
+
+             if (timeIn.hour < 12 && !isAMHoliday) {
+                amArr = timeFormatter.format(timeIn);
+             } else if (timeIn.hour >= 12 && !isPMHoliday) {
+                pmArr = timeFormatter.format(timeIn);
+             }
+
+             if (log.timeOut != null) {
+                final timeOut = DateTime.parse(log.timeOut!);
+                
+                if (actualHours >= 4.0 && !isAMHoliday && !isPMHoliday) {
+                  // Worked full shift, simulate lunch break (12:00-1:00)
+                  if (timeIn.hour < 12) {
+                    amDep = '12:00';
+                    pmArr = '01:00';
+                  }
+                  if (timeOut.hour >= 13) {
+                    pmDep = timeFormatter.format(timeOut);
+                  } else if (timeOut.hour >= 12) {
+                     amDep = timeFormatter.format(timeOut);
+                  }
+                } else {
+                  // Short shift or partial workday with half-holiday
+                  if (timeOut.hour < 12 && !isAMHoliday) {
+                    amDep = timeFormatter.format(timeOut);
+                  } else if (timeIn.hour < 12 && timeOut.hour >= 12 && !isAMHoliday) {
+                    amDep = timeFormatter.format(timeOut);
+                  } else if (timeOut.hour >= 12 && !isPMHoliday) {
+                    pmDep = timeFormatter.format(timeOut);
+                  }
+                }
+
+                // Undertime calculation
+                int dayLate = HourglassEngine.calculateLateDeductions(log, settings.expectedTimeIn);
+                int dayEarly = 0;
+                try {
+                  final expectedOut = DateFormat("HH:mm").parse(settings.expectedTimeOut);
+                  final expectedOutDT = DateTime(timeOut.year, timeOut.month, timeOut.day, expectedOut.hour, expectedOut.minute);
+                  final diffOut = expectedOutDT.difference(timeOut);
+                  if (diffOut.inMinutes > 0) dayEarly = diffOut.inMinutes;
+                } catch (_) {}
+
+                final dayTotalUndertime = dayLate + dayEarly;
+                if (dayTotalUndertime > 0) {
+                  final h = dayTotalUndertime ~/ 60;
+                  final m = dayTotalUndertime % 60;
+                  totalUndertimeHours += h;
+                  totalUndertimeMins += m;
+                  if (h > 0) utHrs = '$h';
+                  if (m > 0) utMins = '$m';
+                }
+             }
+          }
+        }
       }
 
       rows.add(pw.TableRow(
@@ -430,15 +566,13 @@ class PdfService {
       ));
     }
 
-    // Normalize minutes overflow
     totalUndertimeHours += totalUndertimeMins ~/ 60;
     totalUndertimeMins = totalUndertimeMins % 60;
 
-    // Total row
     rows.add(pw.TableRow(
       decoration: const pw.BoxDecoration(border: pw.Border(top: pw.BorderSide(width: 1))),
       children: [
-        cell('Total', style: hBold),
+        cell('TOTAL', style: hBold),
         cell(''),
         cell(''),
         cell(''),
@@ -451,13 +585,13 @@ class PdfService {
     return pw.Table(
       border: pw.TableBorder.all(width: 0.5),
       columnWidths: {
-        0: const pw.FlexColumnWidth(1),    // Day
-        1: const pw.FlexColumnWidth(1.5),  // AM Arrival
-        2: const pw.FlexColumnWidth(1.5),  // AM Departure
-        3: const pw.FlexColumnWidth(1.5),  // PM Arrival
-        4: const pw.FlexColumnWidth(1.5),  // PM Departure
-        5: const pw.FlexColumnWidth(1),    // Hours
-        6: const pw.FlexColumnWidth(1),    // Minutes
+        0: const pw.FlexColumnWidth(1.2), // Day
+        1: const pw.FlexColumnWidth(2),   // AM Arrival
+        2: const pw.FlexColumnWidth(2),   // AM Departure
+        3: const pw.FlexColumnWidth(2),   // PM Arrival
+        4: const pw.FlexColumnWidth(2),   // PM Departure
+        5: const pw.FlexColumnWidth(1.5), // Hours
+        6: const pw.FlexColumnWidth(1.5), // Minutes
       },
       children: rows,
     );
