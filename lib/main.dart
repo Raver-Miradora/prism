@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/theme/civic_horizon_theme.dart';
 import 'ui/main_shell.dart';
+import 'ui/onboarding/onboarding_screen.dart';
+import 'controllers/settings_controller.dart';
+import 'controllers/theme_controller.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,16 +31,48 @@ void main() {
   );
 }
 
-class PrismApp extends StatelessWidget {
+class PrismApp extends ConsumerWidget {
   const PrismApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settingsState = ref.watch(settingsProvider);
+    final themeState = ref.watch(themeControllerProvider);
+
+    // Update status bar based on brightness (Always Light mode UI, Dark Icons)
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+      ),
+    );
+
     return MaterialApp(
       title: 'PRISM Timeclock',
       debugShowCheckedModeBanner: false,
-      theme: CivicHorizonTheme.themeData,
-      home: const MainShell(),
+      theme: CivicHorizonTheme.light(themeState.seedColor),
+      darkTheme: CivicHorizonTheme.light(themeState.seedColor), // Force light theme always
+      themeMode: ThemeMode.light,
+      home: _getHome(settingsState),
     );
+  }
+
+  Widget _getHome(SettingsState state) {
+    if (state.isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    // Check if onboarding is needed (name is empty or just default 'Intern')
+    final isNewUser = state.profile == null || 
+                      state.profile!.name.isEmpty || 
+                      state.profile!.name == 'Intern';
+
+    if (isNewUser) {
+      return const OnboardingScreen();
+    }
+
+    return const MainShell();
   }
 }
