@@ -8,6 +8,7 @@ import '../controllers/timeclock_controller.dart';
 import '../core/utils/hourglass_engine.dart';
 import 'widgets/prism_drawer.dart';
 import 'widgets/profile_avatar.dart';
+import 'document_preview_screen.dart';
 
 class ReportsForm48 extends ConsumerWidget {
   const ReportsForm48({super.key});
@@ -170,7 +171,17 @@ class ReportsForm48 extends ConsumerWidget {
     bool isLoading = state.isGeneratingPdf || state.logsStatus.isLoading;
 
     return GestureDetector(
-      onTap: isLoading ? null : () => notifier.generatePDF(),
+      onTap: isLoading ? null : () {
+        Navigator.push(context, MaterialPageRoute(
+          builder: (ctx) => DocumentPreviewScreen(
+            title: 'DTR Form 48 Assembly',
+            initialContent: null,
+            onApprove: (docCtx, _) async {
+               await notifier.generatePDF();
+            }
+          )
+        ));
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         padding: const EdgeInsets.symmetric(vertical: 20),
@@ -214,6 +225,7 @@ class ReportsForm48 extends ConsumerWidget {
     
     int totalLateMins = 0;
     int totalUndertimeMins = 0;
+    double totalValidHours = 0.0;
 
     return Container(
       decoration: BoxDecoration(
@@ -284,11 +296,33 @@ class ReportsForm48 extends ConsumerWidget {
               totalLateMins += lateVal;
             }
 
+            double shiftHours = 0.0;
+            if (isWork && log.timeIn != null) {
+              final dtInTime = DateTime.parse(log.timeIn!);
+              if (log.timeLunchOut != null && log.timeLunchIn != null && log.timeOut != null) {
+                 final dtLunchOut = DateTime.parse(log.timeLunchOut!);
+                 final dtLunchIn = DateTime.parse(log.timeLunchIn!);
+                 final dtOut = DateTime.parse(log.timeOut!);
+                 
+                 final amDuration = dtLunchOut.difference(dtInTime).inMinutes;
+                 final pmDuration = dtOut.difference(dtLunchIn).inMinutes;
+                 shiftHours = (amDuration + pmDuration) / 60.0;
+              } else if (log.timeOut != null) {
+                 final dtOut = DateTime.parse(log.timeOut!);
+                 shiftHours = dtOut.difference(dtInTime).inMinutes / 60.0;
+                 if (shiftHours > 5) shiftHours -= (settings?.lunchBreakMins ?? 60) / 60.0;
+              }
+              
+              if (lateVal > 0) shiftHours -= (lateVal / 60.0);
+              if (shiftHours < 0) shiftHours = 0;
+            }
+            totalValidHours += shiftHours;
+
             final lateString = lateVal > 0 ? '$lateVal m' : '-- : --';
             final hasError = lateVal > 0;
 
             return _buildTableRow(context, strDate, strDay, strArr, strDep, lateString, hasError);
-          }),
+          }).toList(),
 
           // Table Footer Actions
           Container(
@@ -306,9 +340,19 @@ class ReportsForm48 extends ConsumerWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: context.colors.primary.withAlpha(20),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: context.colors.primary.withAlpha(50)),
+                      ),
+                      child: _buildLedgerStat(context, 'Valid Hours (Rendered)', '${totalValidHours.toStringAsFixed(1)} hrs'),
+                    ),
+                    const SizedBox(width: 24),
                     _buildLedgerStat(context, 'Total Tardy', '$totalLateMins mins'),
-                    const SizedBox(width: 32),
-                    _buildLedgerStat(context, 'Total Undertime', '$totalUndertimeMins mins'),
+                    const SizedBox(width: 24),
+                    _buildLedgerStat(context, 'Undertime', '$totalUndertimeMins mins'),
                   ],
                 ),
                 ElevatedButton.icon(
