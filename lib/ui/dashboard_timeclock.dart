@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../core/theme/civic_horizon_theme.dart';
 import '../controllers/timeclock_controller.dart';
+import '../core/utils/snackbar_utils.dart';
 import 'widgets/prism_drawer.dart';
 import 'widgets/profile_avatar.dart';
 
@@ -16,17 +17,25 @@ class DashboardTimeclock extends ConsumerWidget {
     final state = ref.watch(timeclockControllerProvider);
     final notifier = ref.read(timeclockControllerProvider.notifier);
 
+    // Error listener
+    ref.listen(timeclockControllerProvider.select((s) => s.errorMessage), (prev, next) {
+      if (next != null && next.isNotEmpty) {
+        SnackbarUtils.showError(context, next);
+        notifier.clearError();
+      }
+    });
+
     final isClockedIn = state.activeLog != null;
     final progressVal = state.accumulatedHours / state.targetHours;
     final formattedProgress = (progressVal * 100).clamp(0, 100).toStringAsFixed(0);
 
     return Scaffold(
-      backgroundColor: CivicHorizonTheme.background,
+      backgroundColor: context.colors.surface,
       drawer: const PrismDrawer(),
       body: SafeArea(
         child: Column(
           children: [
-            _buildTopAppBar(),
+            _buildTopAppBar(context),
             Expanded(
               child: state.isLoading 
                 ? const Center(child: CircularProgressIndicator())
@@ -36,13 +45,13 @@ class DashboardTimeclock extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     const SizedBox(height: 24),
-                    _buildDigitalClock(state),
+                    _buildDigitalClock(context, state),
                     const SizedBox(height: 48),
-                    _buildStatusBar(isClockedIn),
+                    _buildStatusBar(context, isClockedIn),
                     const SizedBox(height: 48),
-                    _buildActionButtons(isClockedIn, notifier),
+                    _buildActionButtons(context, isClockedIn, notifier, state),
                     const SizedBox(height: 48),
-                    _buildProgressIndicator(state, formattedProgress),
+                    _buildProgressIndicator(context, state, formattedProgress),
                     const SizedBox(height: 100),
                   ],
                 ),
@@ -54,14 +63,14 @@ class DashboardTimeclock extends ConsumerWidget {
     );
   }
 
-  Widget _buildTopAppBar() {
+  Widget _buildTopAppBar(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       decoration: BoxDecoration(
-        color: CivicHorizonTheme.surface.withAlpha(216),
+        color: context.colors.surface.withAlpha(216),
         border: Border(
           bottom: BorderSide(
-            color: CivicHorizonTheme.surfaceContainerHigh.withAlpha(128),
+            color: context.colors.surfaceContainerHigh.withAlpha(128),
             width: 1,
           ),
         ),
@@ -73,47 +82,48 @@ class DashboardTimeclock extends ConsumerWidget {
             children: [
               Builder(
                 builder: (ctx) => IconButton(
-                  icon: const Icon(Icons.menu, color: CivicHorizonTheme.primary),
+                  icon: Icon(Icons.menu, color: context.colors.primary),
                   onPressed: () => Scaffold.of(ctx).openDrawer(),
                 ),
               ),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 'PRISM',
-                style: TextStyle(
-                  fontFamily: 'Public Sans',
+                style: context.text.headlineLarge?.copyWith(
                   fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                  color: CivicHorizonTheme.primary,
                   letterSpacing: -1.0,
                 ),
               ),
             ],
           ),
-          const ProfileAvatar(size: 40),
+          const ProfileAvatar(size: 44),
         ],
       ),
     );
   }
 
-  Widget _buildDigitalClock(TimeclockState state) {
-    if (state.activeLog != null) {
-      // Show static clocked-in time, forced to UTC+8 Philippine Time
-      final dt = DateTime.parse(state.activeLog!.timeIn).toUtc().add(const Duration(hours: 8));
-      return _buildStaticClockUI(dt, 'ACTIVE RESTRICTED SHIFT');
+  Widget _buildDigitalClock(BuildContext context, TimeclockState state) {
+    String? sessionStart;
+    if (state.activeLog != null && state.activeLog!.timeIn != null) {
+      final dtStart = DateTime.parse(state.activeLog!.timeIn!).toUtc().add(const Duration(hours: 8));
+      sessionStart = 'STARTED AT ${DateFormat('hh:mm:ss a').format(dtStart)}';
     }
 
-    // Show real-time ticking clock with seconds, forced to UTC+8 Philippine Time
+    // Always show real-time ticking clock
     return StreamBuilder<DateTime>(
       stream: Stream.periodic(const Duration(seconds: 1), (_) => DateTime.now().toUtc().add(const Duration(hours: 8))),
-      builder: (context, snapshot) {
+      builder: (ctx, snapshot) {
         final dt = snapshot.data ?? DateTime.now().toUtc().add(const Duration(hours: 8));
-        return _buildStaticClockUI(dt, 'STANDARD TIME REGISTRY');
+        String label = state.activeLog != null 
+            ? (state.activeLog!.isFieldwork ? 'ACTIVE FIELDWORK SHIFT' : 'ACTIVE RESTRICTED SHIFT')
+            : 'STANDARD TIME REGISTRY';
+        
+        return _buildStaticClockUI(context, dt, label, subtitle: sessionStart);
       },
     );
   }
 
-  Widget _buildStaticClockUI(DateTime dt, String label) {
+  Widget _buildStaticClockUI(BuildContext context, DateTime dt, String label, {String? subtitle}) {
     final timeStr = DateFormat('hh:mm').format(dt);
     final secStr = DateFormat(':ss').format(dt);
     final periodStr = DateFormat('a').format(dt);
@@ -121,13 +131,13 @@ class DashboardTimeclock extends ConsumerWidget {
     return Column(
       children: [
         Text(
-          label,
-          style: const TextStyle(
+          label.toUpperCase(),
+          style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 10,
             fontWeight: FontWeight.w700,
             letterSpacing: 2.0,
-            color: CivicHorizonTheme.onSurfaceVariant,
+            color: context.colors.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: 8),
@@ -138,63 +148,75 @@ class DashboardTimeclock extends ConsumerWidget {
           children: [
             Text(
               timeStr,
-              style: const TextStyle(
-                fontFamily: 'Public Sans',
-                fontSize: 72,
-                fontWeight: FontWeight.w900,
-                color: CivicHorizonTheme.primary,
-                letterSpacing: -2.0,
-              ),
+              style: context.text.displayLarge?.copyWith(fontSize: 72, letterSpacing: -2.0),
             ),
             Text(
               secStr,
-              style: const TextStyle(
-                fontFamily: 'Public Sans',
+              style: context.text.displayMedium?.copyWith(
                 fontSize: 32,
-                fontWeight: FontWeight.w800,
-                color: CivicHorizonTheme.outlineVariant,
+                color: context.colors.outlineVariant,
               ),
             ),
             const SizedBox(width: 8),
             Text(
               periodStr,
-              style: const TextStyle(
-                fontFamily: 'Public Sans',
+              style: context.text.displayMedium?.copyWith(
                 fontSize: 24,
-                fontWeight: FontWeight.w800,
-                color: CivicHorizonTheme.onPrimaryContainer,
+                color: context.colors.tertiary,
               ),
             ),
           ],
         ),
+        if (subtitle != null) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: context.colors.primary.withAlpha(12),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              subtitle,
+              style: TextStyle(
+                fontFamily: 'monospace',
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: context.colors.primary,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
 
-  Widget _buildStatusBar(bool isClockedIn) {
+  Widget _buildStatusBar(BuildContext context, bool isClockedIn) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         _buildStatusPill(
+          context,
           Icons.location_on, 
           isClockedIn ? 'GPS: Locked' : 'GPS: Active',
-          isClockedIn ? CivicHorizonTheme.primaryContainer : CivicHorizonTheme.onTertiaryFixedVariant,
+          isClockedIn ? context.colors.primary : context.colors.secondary,
         ),
         const SizedBox(width: 24),
         _buildStatusPill(
+          context,
           Icons.camera_alt, 
-          isClockedIn ? 'Camera: Saved' : 'Camera: Ready',
-          isClockedIn ? CivicHorizonTheme.primaryContainer : CivicHorizonTheme.onTertiaryFixedVariant,
+          isClockedIn ? 'Liveness: Verified' : 'Liveness: Required',
+          isClockedIn ? context.colors.primary : context.colors.secondary,
         ),
       ],
     );
   }
 
-  Widget _buildStatusPill(IconData icon, String label, Color iconColor) {
+  Widget _buildStatusPill(BuildContext context, IconData icon, String label, Color iconColor) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: CivicHorizonTheme.surfaceContainerLow,
+        color: context.colors.surfaceContainerLow,
         borderRadius: BorderRadius.circular(24),
       ),
       child: Row(
@@ -203,12 +225,12 @@ class DashboardTimeclock extends ConsumerWidget {
           const SizedBox(width: 8),
           Text(
             label.toUpperCase(),
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 11,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.5,
-              color: CivicHorizonTheme.onSurfaceVariant,
+              color: context.colors.onSurfaceVariant,
             ),
           ),
         ],
@@ -216,20 +238,126 @@ class DashboardTimeclock extends ConsumerWidget {
     );
   }
 
-  Widget _buildActionButtons(bool isClockedIn, TimeclockController notifier) {
+  Widget _buildActionButtons(BuildContext context, bool isClockedIn, TimeclockController notifier, TimeclockState state) {
+    if (state.punchPhase == PunchPhase.done) {
+      return Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          decoration: BoxDecoration(
+            color: context.colors.surfaceContainerLowest,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: context.colors.outlineVariant.withAlpha(50)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.check_circle, color: context.colors.primary),
+              const SizedBox(width: 12),
+              Text(
+                'SHIFT COMPLETED',
+                style: TextStyle(fontWeight: FontWeight.bold, color: context.colors.primary, letterSpacing: 1.0),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    String overline = '';
+    String title = '';
+    IconData icon = Icons.camera_front;
+    Color iconBgColor = context.colors.primary;
+    Color iconColor = context.colors.onPrimary;
+
+    switch (state.punchPhase) {
+      case PunchPhase.amIn:
+        overline = state.isFieldworkMode ? 'OFF-SITE FIELDWORK' : 'MORNING ARRIVAL';
+        title = 'CLOCK IN (AM)';
+        iconBgColor = context.colors.primary;
+        break;
+      case PunchPhase.lunchOut:
+        overline = 'MIDDAY DEPARTURE';
+        title = 'START LUNCH BREAK';
+        icon = Icons.restaurant;
+        iconBgColor = context.colors.tertiary;
+        break;
+      case PunchPhase.lunchIn:
+        overline = 'AFTERNOON RETURN';
+        title = 'END LUNCH BREAK';
+        iconBgColor = context.colors.primary;
+        break;
+      case PunchPhase.pmOut:
+        overline = 'END REGISTRY';
+        title = 'CLOCK OUT (PM)';
+        icon = Icons.stop_circle;
+        iconBgColor = context.colors.error;
+        break;
+      case PunchPhase.done:
+        break;
+    }
+
     return Column(
       children: [
-        // Clock IN
+        if (state.punchPhase == PunchPhase.amIn) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: state.isFieldworkMode 
+                  ? context.colors.tertiaryContainer.withAlpha(40)
+                  : context.colors.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: state.isFieldworkMode ? context.colors.tertiary : Colors.transparent,
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.terrain, 
+                      size: 20, 
+                      color: state.isFieldworkMode ? context.colors.tertiary : context.colors.onSurfaceVariant
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'FIELDWORK OFF-SITE MODE',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: context.colors.onSurfaceVariant,
+                        letterSpacing: 1.0,
+                      ),
+                    ),
+                  ],
+                ),
+                Switch(
+                  value: state.isFieldworkMode, 
+                  onChanged: (val) => notifier.toggleFieldworkMode(val),
+                  activeColor: context.colors.tertiary,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+
+        // Dynamic Single Punch Button
         GestureDetector(
-          onTap: isClockedIn ? null : () => notifier.clockIn(),
+          onTap: state.isLoading ? null : () => notifier.punchTimeclock(),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 300),
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: isClockedIn ? CivicHorizonTheme.surfaceContainerLow : CivicHorizonTheme.surfaceContainerLowest,
+              color: context.colors.surfaceContainerLowest,
               borderRadius: BorderRadius.circular(12),
-              border: CivicHorizonTheme.ghostBorder,
-              boxShadow: isClockedIn ? [] : CivicHorizonTheme.ambientGlow,
+              border: state.isFieldworkMode && state.punchPhase == PunchPhase.amIn
+                  ? Border.all(color: context.colors.tertiary, width: 2)
+                  : CivicHorizonTheme.ghostBorder(context),
+              boxShadow: CivicHorizonTheme.ambientGlow(context),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -238,22 +366,22 @@ class DashboardTimeclock extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'SHIFT START',
+                      overline,
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w900,
-                        color: isClockedIn ? CivicHorizonTheme.onSurfaceVariant : CivicHorizonTheme.onTertiaryFixedVariant,
+                        color: context.colors.primary,
                         letterSpacing: 2.0,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'CLOCK IN',
+                      title,
                       style: TextStyle(
                         fontFamily: 'Public Sans',
-                        fontSize: 32,
+                        fontSize: 28,
                         fontWeight: FontWeight.w900,
-                        color: isClockedIn ? CivicHorizonTheme.outlineVariant : CivicHorizonTheme.tertiaryFixed,
+                        color: state.punchPhase == PunchPhase.pmOut ? context.colors.error : context.colors.primary,
                         fontStyle: FontStyle.italic,
                       ),
                     ),
@@ -262,69 +390,16 @@ class DashboardTimeclock extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: isClockedIn ? CivicHorizonTheme.surfaceContainerHighest : CivicHorizonTheme.tertiaryFixedDim,
+                    color: iconBgColor,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(
-                    Icons.camera_front,
-                    color: isClockedIn ? CivicHorizonTheme.onSurfaceVariant : CivicHorizonTheme.onTertiaryFixedVariant,
-                    size: 40,
+                  child: state.isLoading 
+                    ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : Icon(
+                    icon,
+                    color: iconColor,
+                    size: 32,
                   ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 24),
-        
-        // Clock OUT
-        GestureDetector(
-          onTap: !isClockedIn ? null : () => notifier.clockOut(),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            padding: const EdgeInsets.all(32), // MADE EQUAL PADDING TO CLOCK IN
-            decoration: BoxDecoration(
-              color: !isClockedIn ? CivicHorizonTheme.surfaceContainerLow : CivicHorizonTheme.surfaceContainerLowest,
-              borderRadius: BorderRadius.circular(12),
-              border: Border(
-                left: BorderSide(
-                  color: !isClockedIn ? CivicHorizonTheme.surfaceContainerHighest : CivicHorizonTheme.error,
-                  width: 4,
-                ),
-              ),
-              boxShadow: !isClockedIn ? [] : CivicHorizonTheme.ambientGlow,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'END REGISTRY',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: !isClockedIn ? CivicHorizonTheme.outlineVariant : CivicHorizonTheme.onSurfaceVariant,
-                        letterSpacing: 2.0,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'CLOCK OUT',
-                      style: TextStyle(
-                        fontFamily: 'Public Sans',
-                        fontSize: 32, // MADE EQUAL FONT SIZE TO CLOCK IN
-                        fontWeight: FontWeight.w900,
-                        color: !isClockedIn ? CivicHorizonTheme.outlineVariant : CivicHorizonTheme.error,
-                      ),
-                    ),
-                  ],
-                ),
-                Icon(
-                  Icons.stop_circle,
-                  color: !isClockedIn ? CivicHorizonTheme.outlineVariant : CivicHorizonTheme.error,
-                  size: 40, // Match size of the camera block width visually
                 ),
               ],
             ),
@@ -334,17 +409,17 @@ class DashboardTimeclock extends ConsumerWidget {
     );
   }
 
-  Widget _buildProgressIndicator(TimeclockState state, String formattedProgress) {
+  Widget _buildProgressIndicator(BuildContext context, TimeclockState state, String formattedProgress) {
     return Container(
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: CivicHorizonTheme.primary,
+        color: context.colors.primary,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: Color(0x33000000),
+            color: Colors.black.withOpacity(0.2),
             blurRadius: 20,
-            offset: Offset(0, 8),
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -354,14 +429,14 @@ class DashboardTimeclock extends ConsumerWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'HOURGLASS PROGRESS',
                 style: TextStyle(
                   fontFamily: 'Public Sans',
                   fontSize: 12,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 2.0,
-                  color: CivicHorizonTheme.onPrimaryContainer,
+                  color: context.colors.onPrimary.withOpacity(0.7),
                 ),
               ),
               const SizedBox(height: 16),
@@ -371,32 +446,32 @@ class DashboardTimeclock extends ConsumerWidget {
                 children: [
                   Text(
                     state.accumulatedHours.toStringAsFixed(1),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Public Sans',
                       fontSize: 40,
                       fontWeight: FontWeight.w900,
-                      color: CivicHorizonTheme.onPrimary,
+                      color: context.colors.onPrimary,
                     ),
                   ),
                   const SizedBox(width: 8),
                   Text(
                     '/ ${state.targetHours} Hours',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
-                      color: CivicHorizonTheme.onPrimaryContainer,
+                      color: context.colors.onPrimary.withOpacity(0.7),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'COMPLETED THIS CYCLE',
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.0,
-                  color: CivicHorizonTheme.onPrimaryContainer,
+                  color: context.colors.onPrimary.withOpacity(0.7),
                 ),
               ),
             ],
@@ -410,16 +485,16 @@ class DashboardTimeclock extends ConsumerWidget {
                 child: CircularProgressIndicator(
                   value: state.accumulatedHours / state.targetHours,
                   strokeWidth: 8,
-                  backgroundColor: CivicHorizonTheme.primaryContainer,
-                  color: CivicHorizonTheme.tertiaryFixedDim,
+                  backgroundColor: context.colors.onPrimary.withOpacity(0.1),
+                  color: context.colors.tertiary,
                 ),
               ),
               Text(
                 '$formattedProgress%',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w900,
-                  color: CivicHorizonTheme.onPrimary,
+                  color: context.colors.onPrimary,
                 ),
               ),
             ],
