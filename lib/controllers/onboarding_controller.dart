@@ -13,7 +13,7 @@ class OnboardingState {
   final String? customOffice;
   final String supervisorName;
   final String programType; // OJT, SPES, Immersion, GIP
-  final int targetHours;
+  final int? targetHours;
   final int currentIndex;
   final double? officeLat;
   final double? officeLng;
@@ -26,7 +26,7 @@ class OnboardingState {
     this.customOffice,
     this.supervisorName = '',
     this.programType = 'OJT',
-    this.targetHours = 486,
+    this.targetHours,
     this.currentIndex = 0,
     this.officeLat,
     this.officeLng,
@@ -82,11 +82,11 @@ class OnboardingController extends StateNotifier<OnboardingState> {
   void markHoursAdjusted() => state = state.copyWith(hasAdjustedHours: true);
 
   void selectProgram(String type) {
-    int hours = state.targetHours;
+    int? hours = state.targetHours;
     if (type == 'SPES') hours = 160; 
     if (type == 'Immersion') hours = 80;
     if (type == 'GIP') hours = 660; // Default GIP
-    if (type == 'OJT') hours = 486; 
+    if (type == 'OJT') hours = null; 
     
     state = state.copyWith(
       programType: type, 
@@ -100,7 +100,7 @@ class OnboardingController extends StateNotifier<OnboardingState> {
     final profile = InternProfile(
       name: state.name,
       agencyOffice: state.office == 'Other' ? (state.customOffice ?? 'Other') : state.office,
-      supervisorName: state.supervisorName.isEmpty ? 'TBD' : state.supervisorName,
+      supervisorName: state.supervisorName, // Blank if empty
     );
     await _profileRepo.saveProfile(profile);
 
@@ -117,7 +117,7 @@ class OnboardingController extends StateNotifier<OnboardingState> {
 
     final settings = InternSettings(
       id: 1,
-      targetHours: state.targetHours,
+      targetHours: state.targetHours ?? 486, // safety fallback
       expectedTimeIn: timeIn,
       expectedTimeOut: timeOut,
       lunchBreakMins: 60,
