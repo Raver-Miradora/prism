@@ -6,12 +6,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 class DocumentPreviewScreen extends ConsumerStatefulWidget {
   final String title;
   final String? initialContent;
+  final Widget? previewWidget;
   final Future<void> Function(BuildContext context, String? finalizedText) onApprove;
 
   const DocumentPreviewScreen({
     super.key,
     required this.title,
     this.initialContent,
+    this.previewWidget,
     required this.onApprove,
   });
 
@@ -104,7 +106,7 @@ class _DocumentPreviewScreenState extends ConsumerState<DocumentPreviewScreen> {
                           border: Border.all(color: colors.outlineVariant.withAlpha(50)),
                         ),
                         child: Center(
-                          child: Column(
+                          child: widget.previewWidget ?? Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(Icons.verified_user, size: 64, color: colors.primary.withAlpha(100)),

@@ -14,9 +14,9 @@ class InternProfile {
 
   factory InternProfile.fromMap(Map<String, dynamic> map) {
     return InternProfile(
-      name: map['name'] as String,
-      agencyOffice: map['agency_office'] as String,
-      supervisorName: map['supervisor_name'] as String,
+      name: (map['name'] as String?) ?? '',
+      agencyOffice: (map['agency_office'] as String?) ?? '',
+      supervisorName: (map['supervisor_name'] as String?) ?? '',
       profileImagePath: map['profile_image_path'] as String?,
     );
   }

@@ -4,43 +4,41 @@ import '../../data/models/intern_settings.dart';
 
 class HourglassEngine {
   /// Calculates the accumulated hours for a single [TimeLog]
-  /// Deducts lunch break if the shift duration exceeded 4 hours.
-  /// Calculates the accumulated hours for a single [TimeLog]
-  /// Deducts lunch break if the shift duration exceeded 4 hours.
+  /// Sums total elapsed time from amArrivalTime to pmDepartureTime.
+  /// Deducts 1 hour if the elapsed time exceeds 5 hours (lunch break).
   static double calculateActualHours(TimeLog log, InternSettings settings) {
-    if (log.timeIn == null || log.timeOut == null) return 0.0;
+    double totalHours = 0.0;
 
-    final In = DateTime.parse(log.timeIn!);
-    final Out = DateTime.parse(log.timeOut!);
-    
-    // Philippines Government 4-Day Workweek Logic (Starting March 9, 2026)
-    // GIP interns typically work Mon-Thu to ensure a 40-hour week (10hr/day).
-    // Fridays are technically non-working for this scheme.
+    if (log.amArrivalTime != null && log.pmDepartureTime != null) {
+      final start = DateTime.parse(log.amArrivalTime!);
+      final end = DateTime.parse(log.pmDepartureTime!);
+      totalHours = end.difference(start).inMinutes / 60.0;
+      
+      // Apply 1-hour lunch break deduction if shift length > 5 hours
+      if (totalHours > 5.0) {
+        totalHours -= 1.0;
+      }
+    }
+
+    // Philippines Government 4-Day Workweek Logic (GIP Program)
     if (settings.programType == 'GIP') {
-      if (In.weekday == DateTime.friday || 
-          In.weekday == DateTime.saturday || 
-          In.weekday == DateTime.sunday) {
+      final firstTime = log.amArrivalTime != null ? DateTime.parse(log.amArrivalTime!) : null;
+      if (firstTime != null && (firstTime.weekday == DateTime.friday || 
+          firstTime.weekday == DateTime.saturday || 
+          firstTime.weekday == DateTime.sunday)) {
         return 0.0;
       }
     }
 
-    final difference = Out.difference(In);
-    double totalHours = difference.inMinutes / 60.0;
-
-    // Standard Rule: Deduct lunch break (typically 1 hr) if work > 4 hours
-    if (totalHours > 4.0) {
-      totalHours -= (settings.lunchBreakMins / 60.0);
-    }
-
-    return double.parse(totalHours.toStringAsFixed(2));
+    return double.parse(totalHours.clamp(0.0, 24.0).toStringAsFixed(2));
   }
 
   /// Calculates total minute-based tardiness.
-  /// Compares actual `timeIn` against `expectedTimeIn` (e.g. "08:00")
+  /// Compares actual `amArrivalTime` against `expectedTimeIn` (e.g. "08:00")
   static int calculateLateDeductions(TimeLog log, String expectedInTime) {
-    if (log.timeIn == null) return 0;
+    if (log.amArrivalTime == null) return 0;
     
-    final In = DateTime.parse(log.timeIn!);
+    final inTime = DateTime.parse(log.amArrivalTime!);
     
     try {
       final formatter = DateFormat("HH:mm");
@@ -55,7 +53,7 @@ class HourglassEngine {
       if (difference.inMinutes > 0) {
         return difference.inMinutes;
       }
-    } catch (e) {
+    } catch (_) {
        // fallback if format parsing fails
     }
     return 0;

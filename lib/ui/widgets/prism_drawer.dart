@@ -146,7 +146,8 @@ class PrismDrawer extends ConsumerWidget {
     final state = ref.watch(settingsProvider);
     final profile = state.profile;
     
-    final bool hasImage = profile?.profileImagePath != null && profile!.profileImagePath!.isNotEmpty;
+    final String? profilePath = profile?.profileImagePath;
+    final bool hasImage = profilePath != null && profilePath.isNotEmpty;
     final String displayName = (profile?.name != null && profile!.name.isNotEmpty) 
         ? profile.name 
         : 'PRISM Intern';
@@ -169,7 +170,7 @@ class PrismDrawer extends ConsumerWidget {
                       shape: BoxShape.circle,
                       color: context.colors.primaryContainer,
                       image: hasImage 
-                        ? DecorationImage(image: FileImage(File(profile.profileImagePath!)), fit: BoxFit.cover)
+                        ? DecorationImage(image: FileImage(File(profilePath)), fit: BoxFit.cover)
                         : null,
                     ),
                     child: hasImage ? null : const Icon(Icons.person, color: Colors.white, size: 28),

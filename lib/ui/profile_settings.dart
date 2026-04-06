@@ -27,30 +27,41 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
   late TextEditingController _hoursController;
   late TextEditingController _timeInController;
   bool _hasPopulated = false;
+  bool _isDirty = false;
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController();
-    _agencyController = TextEditingController();
-    _supervisorController = TextEditingController();
-    _hoursController = TextEditingController();
-    _timeInController = TextEditingController();
+    _nameController = TextEditingController()..addListener(_markDirty);
+    _agencyController = TextEditingController()..addListener(_markDirty);
+    _supervisorController = TextEditingController()..addListener(_markDirty);
+    _hoursController = TextEditingController()..addListener(_markDirty);
+    _timeInController = TextEditingController()..addListener(_markDirty);
+  }
+
+  void _markDirty() {
+    if (!_isDirty) setState(() => _isDirty = true);
   }
 
   void _populateControllers(SettingsState state) {
     if (_hasPopulated) return;
     if (state.isLoading) return;
     _hasPopulated = true;
-    if (state.profile != null) {
-      _nameController.text = state.profile!.name;
-      _agencyController.text = state.profile!.agencyOffice;
-      _supervisorController.text = state.profile!.supervisorName;
+
+    final profile = state.profile;
+    if (profile != null) {
+      _nameController.text = profile.name;
+      _agencyController.text = profile.agencyOffice;
+      _supervisorController.text = profile.supervisorName;
     }
-    if (state.settings != null) {
-      _hoursController.text = state.settings!.targetHours.toString();
-      _timeInController.text = state.settings!.expectedTimeIn;
+
+    final settings = state.settings;
+    if (settings != null) {
+      _hoursController.text = settings.targetHours.toString();
+      _timeInController.text = settings.expectedTimeIn;
     }
+    // Reset dirty state after initial population to avoid false positives
+    Future.microtask(() => setState(() => _isDirty = false));
   }
 
   @override
@@ -72,6 +83,7 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
       targetHours: int.tryParse(_hoursController.text) ?? 486,
       timeIn: _timeInController.text,
     );
+    setState(() => _isDirty = false);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: const Text('Settings successfully saved to registry.'), backgroundColor: context.colors.primary),
     );
@@ -168,9 +180,18 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
     return Scaffold(
       backgroundColor: context.colors.surface,
       drawer: const PrismDrawer(),
-      body: SafeArea(
-        child: Column(
-          children: [
+      body: PopScope(
+        canPop: !_isDirty,
+        onPopInvokedWithResult: (didPop, result) async {
+          if (didPop) return;
+          final shouldPop = await _showDiscardDialog();
+          if (shouldPop && mounted) {
+            Navigator.of(context).pop();
+          }
+        },
+        child: SafeArea(
+          child: Column(
+            children: [
             _buildTopAppBar(context, state),
             Expanded(
               child: state.isLoading
@@ -186,8 +207,6 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
                         const SizedBox(height: 32),
                         _buildPersonalization(context),
                         const SizedBox(height: 32),
-                        _buildCommitChangesButton(context),
-                        const SizedBox(height: 32),
                         _buildDataManagement(context),
                         const SizedBox(height: 80),
                       ],
@@ -195,6 +214,7 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
                   ),
             ),
           ],
+          ),
         ),
       ),
     );
@@ -230,9 +250,36 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
               ),
             ],
           ),
-          ProfileAvatar(
-            size: 44,
-            onTapOverride: () => ref.read(settingsProvider.notifier).pickImage(),
+          Row(
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    'Settings',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: context.colors.primary,
+                    ),
+                  ),
+                  Text(
+                    'USER REGISTRY',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 2.0,
+                      color: context.colors.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 16),
+              ProfileAvatar(
+                size: 44,
+                onTapOverride: () => ref.read(settingsProvider.notifier).pickImage(),
+              ),
+            ],
           ),
         ],
       ),
@@ -271,22 +318,22 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-               Expanded(child: _buildTextInput(context, 'INTERN FULL NAME', _nameController)),
-               const SizedBox(width: 16),
+               _buildTextInput(context, 'INTERN FULL NAME', _nameController),
+               const SizedBox(height: 12),
                Container(
-                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                  decoration: BoxDecoration(
                    color: context.colors.tertiary.withAlpha(25),
                    borderRadius: BorderRadius.circular(8),
-                   border: Border.all(color: context.colors.tertiary),
+                   border: Border.all(color: context.colors.tertiary.withAlpha(100)),
                  ),
                  child: Text(
                    'PROGRAM: ${state.settings?.programType ?? 'OJT'}',
                    style: TextStyle(
-                     fontSize: 12,
+                     fontSize: 10,
                      fontWeight: FontWeight.w900,
                      letterSpacing: 1.0,
                      color: context.colors.tertiary,
@@ -314,40 +361,45 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
             ],
           ),
           const SizedBox(height: 32),
+          _buildCommitChangesButton(context),
+          const SizedBox(height: 32),
           const Divider(),
           const SizedBox(height: 16),
-          Row(
-             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-             children: [
-               Column(
-                 crossAxisAlignment: CrossAxisAlignment.start,
-                 children: [
-                   Text(
-                     'GPS LOCATION VERIFICATION',
-                     style: TextStyle(
-                       fontSize: 10,
-                       fontWeight: FontWeight.bold,
-                       letterSpacing: 1.0,
-                       color: context.colors.onSurfaceVariant,
-                     ),
-                   ),
-                   const SizedBox(height: 4),
-                   Text(
-                     state.settings?.officeLat != null ? 'Base Location Active' : 'No Base Location Set',
-                     style: TextStyle(
-                       fontSize: 14,
-                       color: context.colors.onSurface,
-                     ),
-                   ),
-                 ],
-               ),
-               OutlinedButton.icon(
-                 onPressed: _updateBaseLocation,
-                 icon: const Icon(Icons.location_on, size: 16),
-                 label: const Text('EDIT BASE LOCATION', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-               ),
-             ],
-          ),
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 16,
+              runSpacing: 16,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'GPS LOCATION VERIFICATION',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.0,
+                        color: context.colors.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      state.settings?.officeLat != null ? 'Base Location Active' : 'No Base Location Set',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: context.colors.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+                OutlinedButton.icon(
+                  onPressed: _updateBaseLocation,
+                  icon: const Icon(Icons.location_on, size: 16),
+                  label: const Text('EDIT BASE LOCATION', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
         ],
       ),
     );
@@ -631,5 +683,30 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
         ),
       ),
     );
+  }
+
+  Future<bool> _showDiscardDialog() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('DISCARD CHANGES?'),
+        content: const Text('You have unsaved modifications in your profile. Leaving this screen will permanentely lose these changes.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('STAY'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade900,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('DISCARD'),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
   }
 }

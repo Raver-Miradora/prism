@@ -1,9 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 import '../../../core/theme/civic_horizon_theme.dart';
 import '../../../controllers/onboarding_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../services/location_service.dart';
 
 class OnboardingPage1 extends StatelessWidget {
   const OnboardingPage1({super.key});
@@ -38,7 +40,7 @@ class OnboardingPage1 extends StatelessWidget {
           Container(
             height: 280,
             decoration: BoxDecoration(
-              boxShadow: CivicHorizonTheme.ambientGlow,
+              boxShadow: CivicHorizonTheme.ambientGlow(context),
             ),
             child: Image.file(
               File(heroImagePath),
@@ -87,24 +89,37 @@ class _OnboardingPage2State extends ConsumerState<OnboardingPage2> {
   Future<void> _captureLocation() async {
     setState(() => _isCapturing = true);
     try {
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
-
-      if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
-        Position position = await Geolocator.getCurrentPosition();
-        ref.read(onboardingProvider.notifier).updateOfficeLocation(position.latitude, position.longitude);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Office location captured successfully!'), backgroundColor: CivicHorizonTheme.tertiaryFixedDim),
-          );
-        }
+      final LocationService locationService = LocationService();
+      Position position = await locationService.getCurrentPosition();
+      
+      ref.read(onboardingProvider.notifier).updateOfficeLocation(position.latitude, position.longitude);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Office location captured successfully!'), 
+            backgroundColor: CivicHorizonTheme.tertiaryFixedDim
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
+        String errorMsg = e.toString();
+        if (errorMsg.contains('timeout') || errorMsg.contains('signal weak')) {
+          errorMsg = 'GPS signal weak. Try moving near a window or connect to Wi-Fi for initial setup.';
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error capturing location.'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(errorMsg), 
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 6),
+            action: SnackBarAction(
+              label: 'RETRY', 
+              textColor: Colors.white,
+              onPressed: _captureLocation,
+            ),
+          ),
         );
       }
     } finally {

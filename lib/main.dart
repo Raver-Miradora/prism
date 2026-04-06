@@ -8,9 +8,22 @@ import 'ui/onboarding/onboarding_screen.dart';
 import 'controllers/settings_controller.dart';
 import 'controllers/theme_controller.dart';
 
-void main() {
+import 'package:geolocator/geolocator.dart';
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  // Strict Location Enforcement on Startup
+  // This ensures the GPS is on before the user even sees the dashboard.
+  try {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      await Geolocator.openLocationSettings();
+    }
+  } catch (e) {
+    debugPrint('Startup Location Check Error: $e');
+  }
+
   // Lock to portrait mode for standard app experience
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -31,6 +44,8 @@ void main() {
   );
 }
 
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 class PrismApp extends ConsumerWidget {
   const PrismApp({super.key});
 
@@ -48,6 +63,7 @@ class PrismApp extends ConsumerWidget {
     );
 
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'PRISM Timeclock',
       debugShowCheckedModeBanner: false,
       theme: CivicHorizonTheme.light(themeState.seedColor),

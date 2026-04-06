@@ -20,7 +20,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 5,
+      version: 9,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -30,58 +30,128 @@ class DatabaseHelper {
     if (oldVersion < 2) {
       try {
         await db.execute('ALTER TABLE intern_profile ADD COLUMN profile_image_path TEXT');
-      } catch (e) {
-        // Ignore if column already exists
-      }
+      } catch (_) {}
     }
     if (oldVersion < 3) {
       try {
         await db.execute('ALTER TABLE intern_settings ADD COLUMN office_lat REAL');
         await db.execute('ALTER TABLE intern_settings ADD COLUMN office_lng REAL');
         await db.execute('ALTER TABLE intern_settings ADD COLUMN program_type TEXT DEFAULT "OJT"');
-      } catch (e) {
-        // Ignore if columns already exist
-      }
+      } catch (_) {}
     }
     if (oldVersion < 4) {
       try {
         await db.execute('ALTER TABLE time_logs ADD COLUMN is_fieldwork INTEGER DEFAULT 0');
         await db.execute('ALTER TABLE time_logs ADD COLUMN status TEXT DEFAULT "WORK"');
         await db.execute('ALTER TABLE time_logs ADD COLUMN remarks TEXT');
-      } catch (e) {
-        // Ignore if columns already exist
-      }
+      } catch (_) {}
     }
     if (oldVersion < 5) {
       try {
         await db.execute('ALTER TABLE time_logs ADD COLUMN time_lunch_out TEXT');
         await db.execute('ALTER TABLE time_logs ADD COLUMN time_lunch_in TEXT');
+      } catch (_) {}
+    }
+    if (oldVersion < 6) {
+      try {
+        await db.execute('ALTER TABLE time_logs ADD COLUMN fieldwork_location TEXT');
+        await db.execute('ALTER TABLE time_logs ADD COLUMN fieldwork_purpose TEXT');
+      } catch (_) {}
+    }
+    if (oldVersion < 7) {
+      // Phase 2 Migration: 4-Column Sequence + Manual Flags
+      await db.execute('BEGIN TRANSACTION');
+      try {
+        // 1. Create temporary table
+        await db.execute('''
+          CREATE TABLE time_logs_new (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            date TEXT NOT NULL,
+            am_in TEXT,
+            am_out TEXT,
+            pm_in TEXT,
+            pm_out TEXT,
+            lat_am_in REAL,
+            lng_am_in REAL,
+            is_manual_am_in INTEGER NOT NULL DEFAULT 0,
+            is_manual_am_out INTEGER NOT NULL DEFAULT 0,
+            is_manual_pm_in INTEGER NOT NULL DEFAULT 0,
+            lat_pm_out REAL,
+            lng_pm_out REAL,
+            is_manual_pm_out INTEGER NOT NULL DEFAULT 0,
+            photo_am_in TEXT,
+            photo_pm_out TEXT,
+            sync_status INTEGER NOT NULL DEFAULT 0,
+            is_fieldwork INTEGER NOT NULL DEFAULT 0,
+            status TEXT NOT NULL DEFAULT "WORK",
+            remarks TEXT,
+            fieldwork_location TEXT,
+            fieldwork_purpose TEXT
+          )
+        ''');
+
+        // 2. Copy data with mapping
+        await db.execute('''
+          INSERT INTO time_logs_new (
+            id, date, am_in, am_out, pm_in, pm_out, 
+            lat_am_in, lng_am_in, lat_pm_out, lng_pm_out, 
+            photo_am_in, photo_pm_out, 
+            sync_status, is_fieldwork, status, remarks, 
+            fieldwork_location, fieldwork_purpose
+          )
+          SELECT 
+            id, date, time_in, time_lunch_out, time_lunch_in, time_out, 
+            latitude_in, longitude_in, latitude_out, longitude_out, 
+            photo_path_in, photo_path_out, 
+            sync_status, is_fieldwork, status, remarks, 
+            fieldwork_location, fieldwork_purpose
+          FROM time_logs
+        ''');
+
+        // 3. Swap tables
+        await db.execute('DROP TABLE time_logs');
+        await db.execute('ALTER TABLE time_logs_new RENAME TO time_logs');
+        
+        await db.execute('COMMIT');
       } catch (e) {
-        // Ignore if columns already exist
+        await db.execute('ROLLBACK');
+        rethrow;
       }
+    }
+    
+    if (oldVersion < 9) {
+      // V9 MASTER WIPE: Force drops all legacy data schema to ensure zero-error clean states on packaged builds
+      await db.execute('DROP TABLE IF EXISTS time_logs');
+      await db.execute('DROP TABLE IF EXISTS time_logs_new');
+      await db.execute('DROP TABLE IF EXISTS daily_reports');
+      await db.execute('DROP TABLE IF EXISTS intern_profile');
+      await db.execute('DROP TABLE IF EXISTS intern_settings');
+      await _createDB(db, newVersion);
     }
   }
 
   Future _createDB(Database db, int version) async {
-    // time_logs
+    // time_logs (V9 compliant: Simplified AM IN / PM OUT model)
     await db.execute('''
       CREATE TABLE time_logs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         date TEXT NOT NULL,
-        time_in TEXT,
-        time_lunch_out TEXT,
-        time_lunch_in TEXT,
-        time_out TEXT,
-        latitude_in REAL,
-        longitude_in REAL,
-        latitude_out REAL,
-        longitude_out REAL,
-        photo_path_in TEXT,
-        photo_path_out TEXT,
+        am_arrival_time TEXT,
+        am_arrival_photo_path TEXT,
+        pm_departure_time TEXT,
+        pm_departure_photo_path TEXT,
+        lat_am_arrival REAL,
+        lng_am_arrival REAL,
+        is_manual_am_arrival INTEGER NOT NULL DEFAULT 0,
+        lat_pm_departure REAL,
+        lng_pm_departure REAL,
+        is_manual_pm_departure INTEGER NOT NULL DEFAULT 0,
         sync_status INTEGER NOT NULL DEFAULT 0,
         is_fieldwork INTEGER NOT NULL DEFAULT 0,
         status TEXT NOT NULL DEFAULT "WORK",
-        remarks TEXT
+        remarks TEXT,
+        fieldwork_location TEXT,
+        fieldwork_purpose TEXT
       )
     ''');
 

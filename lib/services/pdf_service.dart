@@ -302,6 +302,18 @@ class PdfService {
       ),
     );
 
+    // Filter fieldwork logs for the Annex
+    final fieldworkLogs = logs.where((l) => l.isFieldwork).toList();
+    if (fieldworkLogs.isNotEmpty) {
+      pdf.addPage(
+        pw.Page(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(40),
+          build: (pw.Context context) => _buildFieldworkAnnex(fieldworkLogs, profile, monthName),
+        ),
+      );
+    }
+
     return pdf.save();
   }
 
@@ -435,25 +447,10 @@ class PdfService {
     rows.add(pw.TableRow(
       children: [
         cell('Day', style: hBold),
-        pw.Container(height: 12, child: pw.Center(child: pw.Text('A.M.', style: hBold))),
-        pw.SizedBox(), 
-        pw.Container(height: 12, child: pw.Center(child: pw.Text('P.M.', style: hBold))),
-        pw.SizedBox(),
-        pw.Container(height: 12, child: pw.Center(child: pw.Text('Undertime', style: hBold))),
-        pw.SizedBox(),
-      ],
-    ));
-
-    // Header 2
-    rows.add(pw.TableRow(
-      children: [
-        cell(''),
-        cell('Arrival', style: hBold),
-        cell('Depar-\nture', style: hBold),
-        cell('Arrival', style: hBold),
-        cell('Depar-\nture', style: hBold),
-        cell('Hours', style: hBold),
-        cell('Min-\nutes', style: hBold),
+        pw.Container(height: 12, child: pw.Center(child: pw.Text('AM Arrival', style: hBold))),
+        pw.Container(height: 12, child: pw.Center(child: pw.Text('PM Departure', style: hBold))),
+        pw.Container(height: 12, child: pw.Center(child: pw.Text('Undertime Hrs', style: hBold))),
+        pw.Container(height: 12, child: pw.Center(child: pw.Text('Undertime Mins', style: hBold))),
       ],
     ));
 
@@ -463,8 +460,6 @@ class PdfService {
       final log = logMap[day];
 
       String amArr = '';
-      String amDep = '';
-      String pmArr = '';
       String pmDep = '';
       String utHrs = '';
       String utMins = '';
@@ -477,79 +472,47 @@ class PdfService {
 
         if (isFullHoliday) {
           amArr = 'HOLIDAY';
-          amDep = log.remarks ?? '';
+          pmDep = log.remarks ?? '';
         } else if (isAMHoliday) {
           amArr = 'HOLIDAY';
-          amDep = log.remarks ?? '';
         } else if (isPMHoliday) {
-          pmArr = 'HOLIDAY';
-          pmDep = log.remarks ?? '';
+          pmDep = 'HOLIDAY';
         } else if (log.status == 'ABSENT' || log.status == 'EXCUSED') {
           amArr = log.status;
-          amDep = log.remarks ?? '';
+          pmDep = log.remarks ?? '';
         }
         
-        // If it's a work log (or has work log data accompanying a half-holiday)
-        if (isWork || log.timeIn != null) {
-          final timeIn = log.timeIn != null ? DateTime.parse(log.timeIn!) : null;
-          
-          if (timeIn != null) {
-             final actualHours = log.timeOut != null 
-                ? HourglassEngine.calculateActualHours(log, settings) 
-                : 0.0;
+        if (isWork) {
+           if (log.amArrivalTime != null) {
+             amArr = timeFormatter.format(DateTime.parse(log.amArrivalTime!));
+             if (log.isFieldwork) amArr = '*$amArr';
+           }
+           if (log.pmDepartureTime != null) {
+             pmDep = timeFormatter.format(DateTime.parse(log.pmDepartureTime!));
+           }
 
-             if (timeIn.hour < 12 && !isAMHoliday) {
-                amArr = timeFormatter.format(timeIn);
-             } else if (timeIn.hour >= 12 && !isPMHoliday) {
-                pmArr = timeFormatter.format(timeIn);
-             }
+           // Undertime calculation
+           int dayLate = HourglassEngine.calculateLateDeductions(log, settings.expectedTimeIn);
+           int dayEarly = 0;
+           if (log.pmDepartureTime != null) {
+              try {
+                final timeOut = DateTime.parse(log.pmDepartureTime!);
+                final expectedOut = DateFormat("HH:mm").parse(settings.expectedTimeOut);
+                final expectedOutDT = DateTime(timeOut.year, timeOut.month, timeOut.day, expectedOut.hour, expectedOut.minute);
+                final diffOut = expectedOutDT.difference(timeOut);
+                if (diffOut.inMinutes > 0) dayEarly = diffOut.inMinutes;
+              } catch (_) {}
+           }
 
-             if (log.timeOut != null) {
-                final timeOut = DateTime.parse(log.timeOut!);
-                
-                if (actualHours >= 4.0 && !isAMHoliday && !isPMHoliday) {
-                  // Worked full shift, simulate lunch break (12:00-1:00)
-                  if (timeIn.hour < 12) {
-                    amDep = '12:00';
-                    pmArr = '01:00';
-                  }
-                  if (timeOut.hour >= 13) {
-                    pmDep = timeFormatter.format(timeOut);
-                  } else if (timeOut.hour >= 12) {
-                     amDep = timeFormatter.format(timeOut);
-                  }
-                } else {
-                  // Short shift or partial workday with half-holiday
-                  if (timeOut.hour < 12 && !isAMHoliday) {
-                    amDep = timeFormatter.format(timeOut);
-                  } else if (timeIn.hour < 12 && timeOut.hour >= 12 && !isAMHoliday) {
-                    amDep = timeFormatter.format(timeOut);
-                  } else if (timeOut.hour >= 12 && !isPMHoliday) {
-                    pmDep = timeFormatter.format(timeOut);
-                  }
-                }
-
-                // Undertime calculation
-                int dayLate = HourglassEngine.calculateLateDeductions(log, settings.expectedTimeIn);
-                int dayEarly = 0;
-                try {
-                  final expectedOut = DateFormat("HH:mm").parse(settings.expectedTimeOut);
-                  final expectedOutDT = DateTime(timeOut.year, timeOut.month, timeOut.day, expectedOut.hour, expectedOut.minute);
-                  final diffOut = expectedOutDT.difference(timeOut);
-                  if (diffOut.inMinutes > 0) dayEarly = diffOut.inMinutes;
-                } catch (_) {}
-
-                final dayTotalUndertime = dayLate + dayEarly;
-                if (dayTotalUndertime > 0) {
-                  final h = dayTotalUndertime ~/ 60;
-                  final m = dayTotalUndertime % 60;
-                  totalUndertimeHours += h;
-                  totalUndertimeMins += m;
-                  if (h > 0) utHrs = '$h';
-                  if (m > 0) utMins = '$m';
-                }
-             }
-          }
+           final dayTotalUndertime = dayLate + dayEarly;
+           if (dayTotalUndertime > 0) {
+             final h = dayTotalUndertime ~/ 60;
+             final m = dayTotalUndertime % 60;
+             totalUndertimeHours += h;
+             totalUndertimeMins += m;
+             if (h > 0) utHrs = '$h';
+             if (m > 0) utMins = '$m';
+           }
         }
       }
 
@@ -557,8 +520,6 @@ class PdfService {
         children: [
           cell('$day'),
           cell(amArr),
-          cell(amDep),
-          cell(pmArr),
           cell(pmDep),
           cell(utHrs),
           cell(utMins),
@@ -575,8 +536,6 @@ class PdfService {
         cell('TOTAL', style: hBold),
         cell(''),
         cell(''),
-        cell(''),
-        cell(''),
         cell('$totalUndertimeHours', style: hBold),
         cell('$totalUndertimeMins', style: hBold),
       ],
@@ -586,14 +545,98 @@ class PdfService {
       border: pw.TableBorder.all(width: 0.5),
       columnWidths: {
         0: const pw.FlexColumnWidth(1.2), // Day
-        1: const pw.FlexColumnWidth(2),   // AM Arrival
-        2: const pw.FlexColumnWidth(2),   // AM Departure
-        3: const pw.FlexColumnWidth(2),   // PM Arrival
-        4: const pw.FlexColumnWidth(2),   // PM Departure
-        5: const pw.FlexColumnWidth(1.5), // Hours
-        6: const pw.FlexColumnWidth(1.5), // Minutes
+        1: const pw.FlexColumnWidth(2.5), // AM Arrival
+        2: const pw.FlexColumnWidth(2.5), // PM Departure
+        3: const pw.FlexColumnWidth(1.5), // Hours
+        4: const pw.FlexColumnWidth(1.5), // Minutes
       },
       children: rows,
+    );
+  }
+
+  static pw.Widget _buildFieldworkAnnex(List<TimeLog> fieldworkLogs, InternProfile profile, String monthName) {
+    final titleStyle = pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold);
+    final headerStyle = pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold);
+    final bodyStyle = const pw.TextStyle(fontSize: 9);
+
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Center(child: pw.Text('FIELD DEPLOYMENT ANNEX', style: titleStyle)),
+        pw.Center(child: pw.Text('Audit Trail for Off-Site Fieldwork', style: pw.TextStyle(fontSize: 10, fontStyle: pw.FontStyle.italic))),
+        pw.SizedBox(height: 24),
+        
+        pw.Text('Name: ${profile.name.toUpperCase()}', style: headerStyle),
+        pw.Text('Period: $monthName', style: bodyStyle),
+        pw.SizedBox(height: 16),
+        
+        pw.Table(
+          border: pw.TableBorder.all(width: 0.5),
+          columnWidths: {
+            0: const pw.FlexColumnWidth(2), // Date
+            1: const pw.FlexColumnWidth(4), // Location
+            2: const pw.FlexColumnWidth(6), // Purpose
+          },
+          children: [
+            pw.TableRow(
+              decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+              children: [
+                pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Center(child: pw.Text('DATE', style: headerStyle))),
+                pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Center(child: pw.Text('LOCATION / SITE', style: headerStyle))),
+                pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Center(child: pw.Text('OFFICIAL PURPOSE', style: headerStyle))),
+              ],
+            ),
+            ...fieldworkLogs.map((log) {
+              final dateStr = DateFormat('MMM dd, yyyy').format(DateTime.parse(log.date));
+              return pw.TableRow(
+                children: [
+                  pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(dateStr, style: bodyStyle)),
+                  pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(log.fieldworkLocation ?? 'Not Specified', style: bodyStyle)),
+                  pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(log.fieldworkPurpose ?? 'Not Specified', style: bodyStyle)),
+                ],
+              );
+            }).toList(),
+          ],
+        ),
+        
+        pw.SizedBox(height: 32),
+        pw.Text(
+          'NOTE: Entries marked with an asterisk (*) in the Form 48 are authorized off-site fieldwork logs. '
+          'The intern was at the locations specified above during those registry events.',
+          style: pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
+        ),
+        
+        pw.Spacer(),
+        
+        pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+             pw.Column(
+               crossAxisAlignment: pw.CrossAxisAlignment.start,
+               children: [
+                 pw.Text('Certified Correct:', style: bodyStyle),
+                 pw.SizedBox(height: 24),
+                 pw.Container(width: 180, decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide()))),
+                 pw.SizedBox(height: 2),
+                 pw.Text(profile.name.toUpperCase(), style: headerStyle),
+                 pw.Text('INTERN', style: const pw.TextStyle(fontSize: 8)),
+               ],
+             ),
+             pw.Column(
+               crossAxisAlignment: pw.CrossAxisAlignment.start,
+               children: [
+                 pw.Text('Verified by:', style: bodyStyle),
+                 pw.SizedBox(height: 24),
+                 pw.Container(width: 180, decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide()))),
+                 pw.SizedBox(height: 2),
+                 pw.Text(profile.supervisorName.toUpperCase(), style: headerStyle),
+                 pw.Text('SUPERVISOR SIGNATURE OVER PRINTED NAME', style: const pw.TextStyle(fontSize: 7)),
+               ],
+             ),
+          ],
+        ),
+        pw.SizedBox(height: 16),
+      ],
     );
   }
 }

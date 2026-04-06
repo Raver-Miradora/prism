@@ -19,7 +19,8 @@ class ProfileAvatar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(settingsProvider);
     final profile = state.profile;
-    final bool hasImage = profile?.profileImagePath != null && profile!.profileImagePath!.isNotEmpty;
+    final String? profilePath = profile?.profileImagePath;
+    final bool hasImage = profilePath != null && profilePath.isNotEmpty;
 
     return GestureDetector(
       onTap: onTapOverride ?? () {
@@ -35,7 +36,7 @@ class ProfileAvatar extends ConsumerWidget {
           border: Border.all(color: CivicHorizonTheme.primary.withAlpha(40), width: 2),
           image: hasImage
               ? DecorationImage(
-                  image: FileImage(File(profile.profileImagePath!)),
+                  image: FileImage(File(profilePath)),
                   fit: BoxFit.cover,
                 )
               : null,

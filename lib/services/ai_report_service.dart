@@ -5,51 +5,64 @@ class AiReportService {
   /// Converts informal "yap" notes into a formal bullet-point accomplishment report.
   Future<String> synthesizeReport(String rawNotes) async {
     // 1. Simulate the 2-second processing time of a real API over a 4G connection
-    await Future.delayed(const Duration(seconds: 2));
+    await Future.delayed(const Duration(seconds: 1));
 
     // 2. Reject empty calls
     if (rawNotes.trim().isEmpty) {
       return "ERROR: The daily journal requires at least one sentence of informal notes before generating a formal report attachment.";
     }
 
-    // 3. Parse individual task lines from the raw notes
-    // Split by newline or period to detect multiple tasks
-    final rawLines = rawNotes
-        .split(RegExp(r'[\n\r]+|(?<=\.)\s+'))
-        .map((l) => l.trim())
-        .where((l) => l.isNotEmpty)
-        .toList();
+    // 3. Clean and isolate the raw text, effectively stripping previous polish bullets
+    String cleanNotes = rawNotes.replaceAll('•', '').trim();
+    if (cleanNotes.isEmpty) return "";
 
-    final buffer = StringBuffer();
-    final suffixes = [
-      'in accordance with assigned departmental objectives',
-      'to enhance operational workflow and efficiency',
-      'ensuring compliance with standard municipal procedures',
-      'supporting ongoing departmental projects and goals',
-      'maintaining high standards of governmental professionalism',
-      'contributing to the streamlined delivery of public services',
-    ];
-
+    final lower = cleanNotes.toLowerCase();
     final random = DateTime.now().millisecond;
 
-    for (int i = 0; i < rawLines.length; i++) {
-      String clean = rawLines[i];
-      // Strip trailing period
-      if (clean.endsWith('.')) {
-        clean = clean.substring(0, clean.length - 1);
-      }
-      // Capitalize first letter
-      if (clean.isNotEmpty) {
-        clean = clean[0].toUpperCase() + clean.substring(1);
-      }
-      
-      final suffix = suffixes[(random + i) % suffixes.length];
-      
-      // One-sentence professional bullet point
-      buffer.writeln('• $clean $suffix.');
+    // 4. Simulate Context-Aware Transformations
+    if (lower.contains('assisted spes') || lower.contains('spes applicants')) {
+      final options = [
+        "Facilitated the SPES application process, including document verification and eligibility screening.",
+        "Provided administrative support to Special Program for Employment of Students (SPES) applicants, ensuring compliance with DOLE requirements.",
+        "Coordinated the registration and screening process for prospective SPES beneficiaries."
+      ];
+      return '• ${options[random % options.length]}';
     }
 
-    return buffer.toString().trim();
+    if (lower.contains('encoded') || lower.contains('encode data') || lower.contains('encoding')) {
+      final options = [
+        "Executed systematic data entry and encoding tasks to maintain accurate digital records.",
+        "Processed and encoded organizational documents into the secure database system.",
+        "Transcribed and digitized physical records, ensuring data integrity and accessibility."
+      ];
+      return '• ${options[random % options.length]}';
+    }
+
+    // 5. Generic Rewrite Engine (Simulated LLM)
+    List<String> activeVerbs = ["Spearheaded", "Facilitated", "Executed", "Completed", "Managed", "Processed", "Coordinated"];
+    String verb = activeVerbs[random % activeVerbs.length];
+    
+    // Remove informal conversational prefixes
+    if (lower.startsWith('i ')) cleanNotes = cleanNotes.substring(2).trim();
+    if (lower.startsWith('just ')) cleanNotes = cleanNotes.substring(5).trim();
+    if (lower.startsWith('i just ')) cleanNotes = cleanNotes.substring(7).trim();
+    
+    if (cleanNotes.isNotEmpty) {
+      cleanNotes = cleanNotes[0].toLowerCase() + cleanNotes.substring(1);
+    }
+    
+    if (cleanNotes.endsWith('.')) {
+      cleanNotes = cleanNotes.substring(0, cleanNotes.length - 1);
+    }
+
+    final genericContexts = [
+      "in alignment with standard operational protocols",
+      "to support the administrative objectives of the department",
+      "ensuring accuracy and procedural compliance",
+    ];
+    final context = genericContexts[random % genericContexts.length];
+
+    return '• $verb $cleanNotes $context.';
   }
 
   /// Summarizes a month's worth of informal notes into 1-5 professional bullet points.

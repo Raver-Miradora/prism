@@ -23,13 +23,13 @@ class InternSettings {
 
   factory InternSettings.fromMap(Map<String, dynamic> map) {
     return InternSettings(
-      id: map['id'] as int? ?? 1,
-      targetHours: map['target_hours'] as int,
+      id: (map['id'] as num?)?.toInt() ?? 1,
+      targetHours: (map['target_hours'] as num?)?.toInt() ?? 486,
       expectedTimeIn: map['expected_time_in'] as String? ?? '08:00',
       expectedTimeOut: map['expected_time_out'] as String? ?? '17:00',
-      lunchBreakMins: map['lunch_break_mins'] as int? ?? 60,
-      officeLat: map['office_lat'] as double?,
-      officeLng: map['office_lng'] as double?,
+      lunchBreakMins: (map['lunch_break_mins'] as num?)?.toInt() ?? 60,
+      officeLat: (map['office_lat'] as num?)?.toDouble(),
+      officeLng: (map['office_lng'] as num?)?.toDouble(),
       programType: map['program_type'] as String? ?? 'OJT',
     );
   }

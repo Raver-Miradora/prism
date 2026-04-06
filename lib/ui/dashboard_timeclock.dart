@@ -5,9 +5,11 @@ import 'package:intl/intl.dart';
 
 import '../core/theme/civic_horizon_theme.dart';
 import '../controllers/timeclock_controller.dart';
-import '../core/utils/snackbar_utils.dart';
+import '../services/app_feedback.dart';
 import 'widgets/prism_drawer.dart';
 import 'widgets/profile_avatar.dart';
+import 'widgets/clock_in_widget.dart';
+import '../services/security_service.dart';
 
 class DashboardTimeclock extends ConsumerWidget {
   const DashboardTimeclock({super.key});
@@ -16,11 +18,13 @@ class DashboardTimeclock extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(timeclockControllerProvider);
     final notifier = ref.read(timeclockControllerProvider.notifier);
+    final autoTimeAsync = ref.watch(autoTimeProvider);
+    final isAutoTimeEnabled = autoTimeAsync.value ?? true; // Default to true during loading to avoid flicker
 
     // Error listener
     ref.listen(timeclockControllerProvider.select((s) => s.errorMessage), (prev, next) {
       if (next != null && next.isNotEmpty) {
-        SnackbarUtils.showError(context, next);
+        AppFeedback.showError(context, next);
         notifier.clearError();
       }
     });
@@ -40,17 +44,19 @@ class DashboardTimeclock extends ConsumerWidget {
               child: state.isLoading 
                 ? const Center(child: CircularProgressIndicator())
                 : SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+                padding: const EdgeInsets.only(left: 24.0, right: 24.0, top: 8.0, bottom: 32.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
                     _buildDigitalClock(context, state),
-                    const SizedBox(height: 48),
+                    const SizedBox(height: 32),
+                    if (!isAutoTimeEnabled) _buildSecurityLockBanner(context),
+                    const SizedBox(height: 16),
                     _buildStatusBar(context, isClockedIn),
-                    const SizedBox(height: 48),
-                    _buildActionButtons(context, isClockedIn, notifier, state),
-                    const SizedBox(height: 48),
+                    const SizedBox(height: 32),
+                    _buildActionButtons(context, isClockedIn, notifier, state, isAutoTimeEnabled),
+                    const SizedBox(height: 32),
                     _buildProgressIndicator(context, state, formattedProgress),
                     const SizedBox(height: 100),
                   ],
@@ -104,8 +110,8 @@ class DashboardTimeclock extends ConsumerWidget {
 
   Widget _buildDigitalClock(BuildContext context, TimeclockState state) {
     String? sessionStart;
-    if (state.activeLog != null && state.activeLog!.timeIn != null) {
-      final dtStart = DateTime.parse(state.activeLog!.timeIn!).toUtc().add(const Duration(hours: 8));
+    if (state.activeLog != null && state.activeLog!.amArrivalTime != null) {
+      final dtStart = DateTime.parse(state.activeLog!.amArrivalTime!).toUtc().add(const Duration(hours: 8));
       sessionStart = 'STARTED AT ${DateFormat('hh:mm:ss a').format(dtStart)}';
     }
 
@@ -238,7 +244,7 @@ class DashboardTimeclock extends ConsumerWidget {
     );
   }
 
-  Widget _buildActionButtons(BuildContext context, bool isClockedIn, TimeclockController notifier, TimeclockState state) {
+  Widget _buildActionButtons(BuildContext context, bool isClockedIn, TimeclockController notifier, TimeclockState state, bool isAutoTimeEnabled) {
     if (state.punchPhase == PunchPhase.done) {
       return Center(
         child: Container(
@@ -273,17 +279,6 @@ class DashboardTimeclock extends ConsumerWidget {
       case PunchPhase.amIn:
         overline = state.isFieldworkMode ? 'OFF-SITE FIELDWORK' : 'MORNING ARRIVAL';
         title = 'CLOCK IN (AM)';
-        iconBgColor = context.colors.primary;
-        break;
-      case PunchPhase.lunchOut:
-        overline = 'MIDDAY DEPARTURE';
-        title = 'START LUNCH BREAK';
-        icon = Icons.restaurant;
-        iconBgColor = context.colors.tertiary;
-        break;
-      case PunchPhase.lunchIn:
-        overline = 'AFTERNOON RETURN';
-        title = 'END LUNCH BREAK';
         iconBgColor = context.colors.primary;
         break;
       case PunchPhase.pmOut:
@@ -336,7 +331,13 @@ class DashboardTimeclock extends ConsumerWidget {
                 ),
                 Switch(
                   value: state.isFieldworkMode, 
-                  onChanged: (val) => notifier.toggleFieldworkMode(val),
+                  onChanged: (val) {
+                    if (val) {
+                      _showFieldworkAuthorizationDialog(context, notifier);
+                    } else {
+                      notifier.toggleFieldworkMode(false);
+                    }
+                  },
                   activeColor: context.colors.tertiary,
                 ),
               ],
@@ -345,65 +346,15 @@ class DashboardTimeclock extends ConsumerWidget {
           const SizedBox(height: 16),
         ],
 
-        // Dynamic Single Punch Button
-        GestureDetector(
-          onTap: state.isLoading ? null : () => notifier.punchTimeclock(),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              color: context.colors.surfaceContainerLowest,
-              borderRadius: BorderRadius.circular(12),
-              border: state.isFieldworkMode && state.punchPhase == PunchPhase.amIn
-                  ? Border.all(color: context.colors.tertiary, width: 2)
-                  : CivicHorizonTheme.ghostBorder(context),
-              boxShadow: CivicHorizonTheme.ambientGlow(context),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      overline,
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        color: context.colors.primary,
-                        letterSpacing: 2.0,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontFamily: 'Public Sans',
-                        fontSize: 28,
-                        fontWeight: FontWeight.w900,
-                        color: state.punchPhase == PunchPhase.pmOut ? context.colors.error : context.colors.primary,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ],
-                ),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: iconBgColor,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: state.isLoading 
-                    ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : Icon(
-                    icon,
-                    color: iconColor,
-                    size: 32,
-                  ),
-                ),
-              ],
-            ),
-          ),
+        // Standardized Single Punch Button
+        ClockInWidget(
+          onPressed: isAutoTimeEnabled ? () => notifier.punchTimeclock() : null,
+          title: title,
+          overline: overline,
+          icon: icon,
+          iconBgColor: isAutoTimeEnabled ? iconBgColor : context.colors.outline,
+          iconColor: iconColor,
+          isErrorStyle: state.punchPhase == PunchPhase.pmOut,
         ),
       ],
     );
@@ -498,6 +449,153 @@ class DashboardTimeclock extends ConsumerWidget {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showFieldworkAuthorizationDialog(BuildContext context, TimeclockController notifier) {
+    final locController = TextEditingController();
+    final purposeController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: context.colors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.gavel, color: context.colors.error, size: 24),
+            const SizedBox(width: 12),
+            Text('Fieldwork Authorization', style: context.text.titleLarge),
+          ],
+        ),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Please provide the mandatory details for your deployment site today.',
+                style: context.text.bodyMedium?.copyWith(color: context.colors.onSurfaceVariant),
+              ),
+              const SizedBox(height: 24),
+              TextFormField(
+                controller: locController,
+                decoration: InputDecoration(
+                  labelText: 'LOCATION NAME / SITE',
+                  labelStyle: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1, color: context.colors.primary),
+                  hintText: 'e.g. City Plaza, Regional Hub...',
+                  border: const OutlineInputBorder(),
+                ),
+                validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: purposeController,
+                decoration: InputDecoration(
+                  labelText: 'OFFICIAL PURPOSE',
+                  labelStyle: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1, color: context.colors.primary),
+                  hintText: 'e.g. Stakeholder meeting, site audit...',
+                  border: const OutlineInputBorder(),
+                ),
+                validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
+              ),
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: context.colors.errorContainer.withAlpha(30),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: context.colors.error.withAlpha(50)),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      'LEGAL WARNING',
+                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: context.colors.error),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Fieldwork logs are flagged for physical supervisor verification. Falsifying government time records is a violation of deployment terms.',
+                      style: TextStyle(fontSize: 11, color: context.colors.error, height: 1.4),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('CANCEL', style: TextStyle(color: context.colors.onSurfaceVariant)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                notifier.toggleFieldworkMode(
+                  true,
+                  location: locController.text,
+                  purpose: purposeController.text,
+                );
+                Navigator.pop(ctx);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: context.colors.primary,
+              foregroundColor: context.colors.onPrimary,
+            ),
+            child: const Text('I AGREE & PROCEED'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSecurityLockBanner(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: context.colors.errorContainer.withAlpha(200),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: context.colors.error, width: 2),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.security_update_warning, color: context.colors.onErrorContainer, size: 28),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'SECURITY LOCK',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                    color: context.colors.onErrorContainer,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "Enable 'Automatic Date & Time' in Android Settings to log attendance.",
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: context.colors.onErrorContainer,
+                    fontWeight: FontWeight.w600,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

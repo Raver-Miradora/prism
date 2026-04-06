@@ -5,9 +5,11 @@ import 'package:intl/intl.dart';
 import '../core/theme/civic_horizon_theme.dart';
 import '../controllers/reports_controller.dart';
 import '../controllers/timeclock_controller.dart';
+import '../controllers/settings_controller.dart';
 import '../core/utils/hourglass_engine.dart';
 import 'widgets/prism_drawer.dart';
 import 'widgets/profile_avatar.dart';
+import 'widgets/dtr_preview_table.dart';
 import 'document_preview_screen.dart';
 
 class ReportsForm48 extends ConsumerWidget {
@@ -35,7 +37,7 @@ class ReportsForm48 extends ConsumerWidget {
                     const SizedBox(height: 32),
                     _buildTimesheetLedger(context, ref, state),
                     const SizedBox(height: 32),
-                    _buildAssembleButton(context, state, notifier),
+                    _buildAssembleButton(context, ref, state, notifier),
                     const SizedBox(height: 80),
                   ],
                 ),
@@ -97,22 +99,16 @@ class ReportsForm48 extends ConsumerWidget {
   }
 
   Widget _buildReportHeader(BuildContext context, ReportsState state, ReportsController notifier) {
-    return Wrap(
-      alignment: WrapAlignment.spaceBetween,
-      crossAxisAlignment: WrapCrossAlignment.end,
-      runSpacing: 16,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'DTR Generator',
-              style: context.text.displayMedium?.copyWith(fontSize: 28, letterSpacing: -1.0),
-            ),
-          ],
+        Text(
+          'DTR Generator',
+          style: context.text.displayMedium?.copyWith(fontSize: 28, letterSpacing: -1.0),
         ),
+        const SizedBox(height: 16),
         Row(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.start,
           children: [
             IconButton(
               icon: Icon(Icons.refresh, color: context.colors.primary),
@@ -126,7 +122,7 @@ class ReportsForm48 extends ConsumerWidget {
             ),
             _buildDropdownFilter(
               context,
-              'Period', 
+              'Selected Period', 
               DateFormat('MMMM yyyy').format(DateTime(state.selectedYear, state.selectedMonth))
             ),
             IconButton(
@@ -167,15 +163,24 @@ class ReportsForm48 extends ConsumerWidget {
     );
   }
 
-  Widget _buildAssembleButton(BuildContext context, ReportsState state, ReportsController notifier) {
+  Widget _buildAssembleButton(BuildContext context, WidgetRef ref, ReportsState state, ReportsController notifier) {
     bool isLoading = state.isGeneratingPdf || state.logsStatus.isLoading;
 
     return GestureDetector(
       onTap: isLoading ? null : () {
+        final settings = ref.read(settingsProvider).settings;
+        if (settings == null) return;
+
         Navigator.push(context, MaterialPageRoute(
           builder: (ctx) => DocumentPreviewScreen(
             title: 'DTR Form 48 Assembly',
             initialContent: null,
+            previewWidget: DtrPreviewTable(
+              logs: state.logsStatus.valueOrNull ?? [],
+              settings: settings,
+              year: state.selectedYear,
+              month: state.selectedMonth,
+            ),
             onApprove: (docCtx, _) async {
                await notifier.generatePDF();
             }
@@ -186,7 +191,7 @@ class ReportsForm48 extends ConsumerWidget {
         duration: const Duration(milliseconds: 300),
         padding: const EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
-          gradient: isLoading ? const LinearGradient(colors: [Colors.grey, Colors.blueGrey]) : CivicHorizonTheme.ctaGradient,
+          color: isLoading ? context.colors.outlineVariant : context.colors.primary,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
@@ -257,7 +262,7 @@ class ReportsForm48 extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
-                    color: context.colors.tertiary.withValues(alpha: 0.2),
+                    color: context.colors.tertiary.withAlpha(51),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text('ACTIVE RECORD', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: context.colors.tertiary)),
@@ -277,9 +282,9 @@ class ReportsForm48 extends ConsumerWidget {
           // Dynamically map table rows
           ...logs.map((log) {
             final isWork = log.status == 'WORK';
-            final dtIn = log.timeIn != null ? DateTime.parse(log.timeIn!) : DateTime.parse(log.date);
-            final strDate = DateFormat('MMM dd, yyyy').format(dtIn);
-            final strDay = DateFormat('EEEE').format(dtIn);
+            final dtRef = log.amArrivalTime != null ? DateTime.parse(log.amArrivalTime!) : DateTime.parse(log.date);
+            final strDate = DateFormat('MMM dd, yyyy').format(dtRef);
+            final strDay = DateFormat('EEEE').format(dtRef);
             
             // Format Display Status
             String displayStatus = log.status;
@@ -287,41 +292,25 @@ class ReportsForm48 extends ConsumerWidget {
             if (displayStatus == 'HOLIDAY_AM') displayStatus = 'HOLIDAY (AM)';
             if (displayStatus == 'HOLIDAY_PM') displayStatus = 'HOLIDAY (PM)';
 
-            String strArr = isWork ? (log.timeIn != null ? DateFormat('hh:mm a').format(DateTime.parse(log.timeIn!)) : '--:--') : displayStatus;
-            String strDep = isWork ? (log.timeOut != null ? DateFormat('hh:mm a').format(DateTime.parse(log.timeOut!)) : 'Active') : (log.remarks ?? '');
+            String sAmArr = isWork ? (log.amArrivalTime != null ? DateFormat('hh:mm').format(DateTime.parse(log.amArrivalTime!)) : '--:--') : displayStatus;
+            String sPmDep = isWork ? (log.pmDepartureTime != null ? DateFormat('hh:mm').format(DateTime.parse(log.pmDepartureTime!)) : '--:--') : (log.remarks ?? '');
             
             int lateVal = 0;
-            if (settings != null && log.timeOut != null && isWork) {
+            if (settings != null && log.amArrivalTime != null && isWork) {
               lateVal = HourglassEngine.calculateLateDeductions(log, settings.expectedTimeIn);
               totalLateMins += lateVal;
             }
 
             double shiftHours = 0.0;
-            if (isWork && log.timeIn != null) {
-              final dtInTime = DateTime.parse(log.timeIn!);
-              if (log.timeLunchOut != null && log.timeLunchIn != null && log.timeOut != null) {
-                 final dtLunchOut = DateTime.parse(log.timeLunchOut!);
-                 final dtLunchIn = DateTime.parse(log.timeLunchIn!);
-                 final dtOut = DateTime.parse(log.timeOut!);
-                 
-                 final amDuration = dtLunchOut.difference(dtInTime).inMinutes;
-                 final pmDuration = dtOut.difference(dtLunchIn).inMinutes;
-                 shiftHours = (amDuration + pmDuration) / 60.0;
-              } else if (log.timeOut != null) {
-                 final dtOut = DateTime.parse(log.timeOut!);
-                 shiftHours = dtOut.difference(dtInTime).inMinutes / 60.0;
-                 if (shiftHours > 5) shiftHours -= (settings?.lunchBreakMins ?? 60) / 60.0;
-              }
-              
-              if (lateVal > 0) shiftHours -= (lateVal / 60.0);
-              if (shiftHours < 0) shiftHours = 0;
+            if (isWork && settings != null) {
+              shiftHours = HourglassEngine.calculateActualHours(log, settings);
             }
             totalValidHours += shiftHours;
 
-            final lateString = lateVal > 0 ? '$lateVal m' : '-- : --';
+            final lateString = lateVal > 0 ? '$lateVal m' : '--';
             final hasError = lateVal > 0;
 
-            return _buildTableRow(context, strDate, strDay, strArr, strDep, lateString, hasError);
+            return _buildTableRow(context, strDate, strDay, sAmArr, sPmDep, lateString, hasError);
           }).toList(),
 
           // Table Footer Actions
@@ -411,7 +400,7 @@ class ReportsForm48 extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
-                initialValue: selectedStatus,
+                value: selectedStatus,
                 decoration: const InputDecoration(
                   labelText: 'Attendance Status',
                   labelStyle: TextStyle(fontSize: 12),
@@ -462,8 +451,8 @@ class ReportsForm48 extends ConsumerWidget {
       child: Row(
         children: [
           Expanded(flex: 3, child: Text('DATE', style: _headerStyle(context))),
-          Expanded(flex: 2, child: Center(child: Text('ARRIVAL', style: _headerStyle(context)))),
-          Expanded(flex: 2, child: Center(child: Text('DEPARTURE', style: _headerStyle(context)))),
+          Expanded(flex: 3, child: Center(child: Text('AM ARRIVAL', style: _headerStyle(context)))),
+          Expanded(flex: 3, child: Center(child: Text('PM DEPARTURE', style: _headerStyle(context)))),
           Expanded(flex: 2, child: Align(alignment: Alignment.centerRight, child: Text('LATE', style: _headerStyle(context)))),
         ],
       ),
@@ -477,7 +466,7 @@ class ReportsForm48 extends ConsumerWidget {
     letterSpacing: 1.0,
   );
 
-  Widget _buildTableRow(BuildContext context, String date, String day, String arr, String dep, String lateVal, bool hasError) {
+  Widget _buildTableRow(BuildContext context, String date, String day, String amArr, String pmDep, String lateVal, bool hasError) {
     return Container(
       decoration: BoxDecoration(border: Border(top: BorderSide(color: context.colors.surfaceContainerHigh))),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -488,23 +477,13 @@ class ReportsForm48 extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(date, style: TextStyle(fontWeight: FontWeight.bold, color: context.colors.onSurface)),
+                Text(date, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: context.colors.onSurface)),
                 Text(day, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: context.colors.onSurfaceVariant)),
               ],
             ),
           ),
-          Expanded(
-            flex: 2,
-            child: Center(
-              child: Text(arr, style: TextStyle(fontWeight: FontWeight.w500, color: hasError ? context.colors.error : context.colors.onSurface)),
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Center(
-              child: Text(dep, style: TextStyle(fontWeight: FontWeight.w500, color: context.colors.onSurface)),
-            ),
-          ),
+          _buildTimeCell(context, amArr, hasError, flex: 3),
+          _buildTimeCell(context, pmDep, false, flex: 3),
           Expanded(
             flex: 2,
             child: Align(
@@ -513,7 +492,7 @@ class ReportsForm48 extends ConsumerWidget {
                 lateVal,
                 style: TextStyle(
                   fontFamily: 'monospace',
-                  fontSize: 14,
+                  fontSize: 12,
                   fontWeight: hasError ? FontWeight.bold : FontWeight.normal,
                   color: hasError ? context.colors.error : const Color(0xFF179D53),
                 ),
@@ -521,6 +500,22 @@ class ReportsForm48 extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTimeCell(BuildContext context, String time, bool isError, {int flex = 2}) {
+    return Expanded(
+      flex: flex,
+      child: Center(
+        child: Text(
+          time,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+            color: isError ? context.colors.error : context.colors.onSurface,
+          ),
+        ),
       ),
     );
   }

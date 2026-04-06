@@ -24,12 +24,12 @@ class TimeLogRepository {
     );
   }
 
-  /// Returns the *active* uncompleted log for today (has timeOut == null).
+  /// Returns the log for today, if it exists.
   Future<TimeLog?> getActiveLogForToday(String dateISO) async {
     final db = await _dbHelper.database;
     final List<Map<String, dynamic>> maps = await db.query(
       'time_logs',
-      where: 'date = ? AND time_out IS NULL',
+      where: 'date = ?',
       whereArgs: [dateISO],
       limit: 1,
     );
@@ -45,22 +45,24 @@ class TimeLogRepository {
     final db = await _dbHelper.database;
     final List<Map<String, dynamic>> maps = await db.query(
       'time_logs',
-      where: 'time_out IS NOT NULL',
     );
 
     double total = 0.0;
     // Fast loop summing durations
     for (var m in maps) {
        try {
-          final inTime = DateTime.parse(m['time_in']);
-          final outTime = DateTime.parse(m['time_out']);
-          var diff = outTime.difference(inTime).inMinutes.toDouble();
-          
-          if (diff > 240) { // Over 4 hours assumes lunch
-             diff -= 60; // Usually 1 hour logic, could sync to InternSettings later
+          double dayTotal = 0.0;
+          if (m['am_in'] != null && m['am_out'] != null) {
+              final inTime = DateTime.parse(m['am_in']);
+              final outTime = DateTime.parse(m['am_out']);
+              dayTotal += outTime.difference(inTime).inMinutes / 60.0;
           }
-
-          total += diff / 60.0;
+          if (m['pm_in'] != null && m['pm_out'] != null) {
+              final inTime = DateTime.parse(m['pm_in']);
+              final outTime = DateTime.parse(m['pm_out']);
+              dayTotal += outTime.difference(inTime).inMinutes / 60.0;
+          }
+          total += dayTotal;
        } catch (_) {}
     }
     return total;

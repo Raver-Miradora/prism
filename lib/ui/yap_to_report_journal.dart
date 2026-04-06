@@ -9,7 +9,7 @@ import '../controllers/yap_journal_controller.dart';
 import '../controllers/settings_controller.dart';
 import '../data/repositories/daily_report_repository.dart';
 import '../services/pdf_service.dart';
-import '../core/utils/snackbar_utils.dart';
+import '../services/app_feedback.dart';
 import 'widgets/prism_drawer.dart';
 import 'widgets/profile_avatar.dart';
 import 'document_preview_screen.dart';
@@ -26,6 +26,7 @@ class _YapToReportJournalState extends ConsumerState<YapToReportJournal> {
   final TextEditingController _formalController = TextEditingController();
   Timer? _debounce;
   bool _isSaving = false;
+  String? _lastOriginalNotes;
 
   @override
   void initState() {
@@ -96,6 +97,8 @@ class _YapToReportJournalState extends ConsumerState<YapToReportJournal> {
                     _buildDatePicker(context, journalState.selectedDate),
                     const SizedBox(height: 16),
                     _buildRecentDaysStrip(context, journalState.selectedDate),
+                    const SizedBox(height: 20),
+                    _buildAITipBox(context),
                     const SizedBox(height: 24),
                     _buildNotesInput(context, isLoading),
                     const SizedBox(height: 24),
@@ -295,6 +298,47 @@ class _YapToReportJournalState extends ConsumerState<YapToReportJournal> {
     );
   }
 
+  Widget _buildAITipBox(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: context.colors.primary.withAlpha(12),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: context.colors.primary.withAlpha(25)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.lightbulb_outline, color: context.colors.primary, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'PRO-TIP FOR AI POLISHING',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.0,
+                    color: context.colors.primary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Mention specific tasks (e.g., "Encoded 50 records") or outcomes for better results.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: context.colors.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildNotesInput(BuildContext context, bool isLoading) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -304,24 +348,59 @@ class _YapToReportJournalState extends ConsumerState<YapToReportJournal> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'DAILY ACCOMPLISHMENTS',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 2.0,
-                  color: context.colors.onSurfaceVariant,
-                ),
+              Row(
+                children: [
+                  Text(
+                    'DAILY ACCOMPLISHMENTS',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 2.0,
+                      color: context.colors.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  AnimatedOpacity(
+                    duration: const Duration(milliseconds: 300),
+                    opacity: _isSaving ? 0.5 : 1.0,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: _isSaving ? context.colors.surfaceContainerHigh : const Color(0xFFE8F5E9).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(4),
+                        border: _isSaving ? null : Border.all(color: const Color(0xFF2E7D32).withValues(alpha: 0.5)),
+                      ),
+                      child: Text(
+                        _isSaving ? 'SAVING...' : 'SAVED',
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                          color: _isSaving ? context.colors.onSurfaceVariant : const Color(0xFF4CAF50),
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
               if (isLoading)
                 const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
               else
                 IconButton(
                   onPressed: () {
-                    if (_notesController.text.trim().isEmpty) return;
+                    final currentText = _notesController.text.trim();
+                    if (currentText.isEmpty) return;
                     FocusManager.instance.primaryFocus?.unfocus();
-                    ref.read(yapJournalProvider.notifier).generateFormalReport(_notesController.text).then((_) {
-                       if (context.mounted) SnackbarUtils.showSuccess(context, 'Accomplishments polished by AI.');
+
+                    String textToPolish = currentText;
+                    if (_lastOriginalNotes != null && currentText.startsWith('•')) {
+                      textToPolish = _lastOriginalNotes!;
+                    } else {
+                      _lastOriginalNotes = currentText;
+                    }
+
+                    ref.read(yapJournalProvider.notifier).generateFormalReport(textToPolish).then((_) {
+                       if (context.mounted) AppFeedback.showSuccess(context, 'Accomplishments polished by AI.');
                     });
                   },
                   icon: Icon(Icons.auto_awesome, color: context.colors.primary, size: 20),
@@ -332,57 +411,28 @@ class _YapToReportJournalState extends ConsumerState<YapToReportJournal> {
             ],
           ),
         ),
-        Stack(
-          children: [
-            Container(
-              height: 400,
-              decoration: BoxDecoration(
-                color: context.colors.surfaceContainerLowest,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2)),
-                ],
-              ),
-              child: TextField(
-                controller: _notesController,
-                onChanged: _onNotesChanged,
-                maxLines: null,
-                expands: true,
-                style: TextStyle(color: context.colors.onSurface),
-                decoration: InputDecoration(
-                  hintText: 'Type your informal daily notes here...',
-                  hintStyle: TextStyle(color: context.colors.outlineVariant),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.all(24),
-                ),
-              ),
+        Container(
+          height: 240,
+          decoration: BoxDecoration(
+            color: context.colors.surfaceContainerLowest,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2)),
+            ],
+          ),
+          child: TextField(
+            controller: _notesController,
+            onChanged: _onNotesChanged,
+            maxLines: null,
+            expands: true,
+            style: TextStyle(color: context.colors.onSurface),
+            decoration: InputDecoration(
+              hintText: 'Type your informal daily notes here...',
+              hintStyle: TextStyle(color: context.colors.outlineVariant),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.all(24),
             ),
-            Positioned(
-              bottom: 16,
-              right: 16,
-              child: AnimatedOpacity(
-                duration: const Duration(milliseconds: 300),
-                opacity: _isSaving ? 0.5 : 1.0,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: _isSaving ? context.colors.surfaceContainerHigh : const Color(0xFFE8F5E9).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(16),
-                    border: _isSaving ? null : Border.all(color: const Color(0xFF2E7D32).withValues(alpha: 0.5)),
-                  ),
-                  child: Text(
-                    _isSaving ? 'SAVING...' : 'DRAFT SAVED',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: _isSaving ? context.colors.onSurfaceVariant : const Color(0xFF4CAF50),
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ],
     );
@@ -395,7 +445,7 @@ class _YapToReportJournalState extends ConsumerState<YapToReportJournal> {
           final summary = await ref.read(yapJournalProvider.notifier).retrieveMonthlySummary();
           if (!context.mounted) return;
           if (summary == null || summary.isEmpty) {
-             SnackbarUtils.showError(context, "No completed entries found for this month.");
+             AppFeedback.showError(context, "No completed entries found for this month.");
              return;
           }
           
