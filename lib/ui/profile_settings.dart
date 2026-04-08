@@ -26,6 +26,8 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
   late TextEditingController _supervisorController;
   late TextEditingController _hoursController;
   late TextEditingController _timeInController;
+  late TextEditingController _schoolController;
+  late TextEditingController _courseController;
   bool _hasPopulated = false;
   bool _isDirty = false;
 
@@ -37,6 +39,8 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
     _supervisorController = TextEditingController()..addListener(_markDirty);
     _hoursController = TextEditingController()..addListener(_markDirty);
     _timeInController = TextEditingController()..addListener(_markDirty);
+    _schoolController = TextEditingController()..addListener(_markDirty);
+    _courseController = TextEditingController()..addListener(_markDirty);
   }
 
   void _markDirty() {
@@ -59,6 +63,8 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
     if (settings != null) {
       _hoursController.text = settings.targetHours.toString();
       _timeInController.text = settings.expectedTimeIn;
+      _schoolController.text = settings.schoolName;
+      _courseController.text = settings.courseProgram;
     }
     // Reset dirty state after initial population to avoid false positives
     Future.microtask(() => setState(() => _isDirty = false));
@@ -71,6 +77,8 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
     _supervisorController.dispose();
     _hoursController.dispose();
     _timeInController.dispose();
+    _schoolController.dispose();
+    _courseController.dispose();
     super.dispose();
   }
 
@@ -82,6 +90,8 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
       supervisor: _supervisorController.text,
       targetHours: int.tryParse(_hoursController.text) ?? 486,
       timeIn: _timeInController.text,
+      schoolName: _schoolController.text,
+      courseProgram: _courseController.text,
     );
     setState(() => _isDirty = false);
     ScaffoldMessenger.of(context).showSnackBar(
@@ -349,6 +359,15 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
             children: [
               SizedBox(width: 320, child: _buildTextInput(context, 'GOVERNMENT AGENCY/OFFICE', _agencyController)),
               SizedBox(width: 320, child: _buildTextInput(context, 'SUPERVISOR NAME', _supervisorController)),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Wrap(
+            spacing: 24,
+            runSpacing: 24,
+            children: [
+              SizedBox(width: 320, child: _buildTextInput(context, 'NAME OF SCHOOL', _schoolController)),
+              SizedBox(width: 320, child: _buildTextInput(context, 'COURSE / PROGRAM', _courseController)),
             ],
           ),
           const SizedBox(height: 32),
