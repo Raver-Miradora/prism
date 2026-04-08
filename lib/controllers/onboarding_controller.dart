@@ -19,6 +19,8 @@ class OnboardingState {
   final double? officeLng;
   final bool hasReadTerms;
   final bool hasAdjustedHours;
+  final String schoolName;
+  final String courseProgram;
 
   OnboardingState({
     this.name = '',
@@ -32,6 +34,8 @@ class OnboardingState {
     this.officeLng,
     this.hasReadTerms = false,
     this.hasAdjustedHours = false,
+    this.schoolName = '',
+    this.courseProgram = '',
   });
 
   OnboardingState copyWith({
@@ -46,6 +50,8 @@ class OnboardingState {
     double? officeLng,
     bool? hasReadTerms,
     bool? hasAdjustedHours,
+    String? schoolName,
+    String? courseProgram,
   }) {
     return OnboardingState(
       name: name ?? this.name,
@@ -59,6 +65,8 @@ class OnboardingState {
       officeLng: officeLng ?? this.officeLng,
       hasReadTerms: hasReadTerms ?? this.hasReadTerms,
       hasAdjustedHours: hasAdjustedHours ?? this.hasAdjustedHours,
+      schoolName: schoolName ?? this.schoolName,
+      courseProgram: courseProgram ?? this.courseProgram,
     );
   }
 }
@@ -80,6 +88,8 @@ class OnboardingController extends StateNotifier<OnboardingState> {
   void updateOfficeLocation(double lat, double lng) => state = state.copyWith(officeLat: lat, officeLng: lng);
   void setTermsRead(bool read) => state = state.copyWith(hasReadTerms: read);
   void markHoursAdjusted() => state = state.copyWith(hasAdjustedHours: true);
+  void updateSchoolName(String school) => state = state.copyWith(schoolName: school);
+  void updateCourseProgram(String course) => state = state.copyWith(courseProgram: course);
 
   void selectProgram(String type) {
     int? hours = state.targetHours;
@@ -124,6 +134,8 @@ class OnboardingController extends StateNotifier<OnboardingState> {
       officeLat: state.officeLat,
       officeLng: state.officeLng,
       programType: state.programType,
+      schoolName: state.schoolName,
+      courseProgram: state.courseProgram,
     );
     
     await db.update(
