@@ -55,7 +55,7 @@ class _DocumentPreviewScreenState extends ConsumerState<DocumentPreviewScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'DOCUMENT REVIEW',
+                'DRAFT ACCOMPLISHMENTS',
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w900,
@@ -66,7 +66,7 @@ class _DocumentPreviewScreenState extends ConsumerState<DocumentPreviewScreen> {
               const SizedBox(height: 8),
               if (widget.initialContent != null)
                 Text(
-                  'Make any final adjustments to your monthly accomplishments before locking them into the PDF.',
+                  'Make any final adjustments to your accomplishments for the selected period before locking them into the PDF.',
                   style: TextStyle(fontSize: 14, color: colors.onSurfaceVariant),
                 )
               else
