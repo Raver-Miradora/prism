@@ -59,4 +59,20 @@ class DailyReportRepository {
 
     return maps.map((m) => DailyReport.fromMap(m)).toList();
   }
+
+  /// Retrieve all reports within a specific custom date range
+  Future<List<DailyReport>> getReportsForRange(DateTime start, DateTime end) async {
+    final db = await _dbHelper.database;
+    final startDate = start.toIso8601String().split('T').first;
+    final endDate = end.toIso8601String().split('T').first;
+
+    final List<Map<String, dynamic>> maps = await db.query(
+      'daily_reports',
+      where: 'date >= ? AND date <= ?',
+      whereArgs: [startDate, endDate],
+      orderBy: 'date ASC',
+    );
+
+    return maps.map((m) => DailyReport.fromMap(m)).toList();
+  }
 }
