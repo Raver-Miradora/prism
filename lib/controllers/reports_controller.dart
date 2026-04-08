@@ -100,7 +100,10 @@ class ReportsController extends StateNotifier<ReportsState> {
     
     state = state.copyWith(isGeneratingPdf: true);
     try {
-      await PdfService.generateAndPrintForm48(logs, profile, settings, state.selectedYear, state.selectedMonth);
+      await PdfService.generateAndPrintForm48(
+        logs, profile, settings,
+        state.selectedYear, state.selectedMonth,
+      );
     } finally {
       state = state.copyWith(isGeneratingPdf: false);
     }
