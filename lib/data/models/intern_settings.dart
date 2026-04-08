@@ -9,6 +9,8 @@ class InternSettings {
   final double? officeLat;
   final double? officeLng;
   final String programType; // OJT, SPES, Immersion, GIP
+  final String schoolName;
+  final String courseProgram;
 
   InternSettings({
     this.id = 1, // Singleton row
@@ -19,6 +21,8 @@ class InternSettings {
     this.officeLat,
     this.officeLng,
     this.programType = 'OJT',
+    this.schoolName = '',
+    this.courseProgram = '',
   });
 
   factory InternSettings.fromMap(Map<String, dynamic> map) {
@@ -31,6 +35,8 @@ class InternSettings {
       officeLat: (map['office_lat'] as num?)?.toDouble(),
       officeLng: (map['office_lng'] as num?)?.toDouble(),
       programType: map['program_type'] as String? ?? 'OJT',
+      schoolName: map['school_name'] as String? ?? '',
+      courseProgram: map['course_program'] as String? ?? '',
     );
   }
 
@@ -44,6 +50,8 @@ class InternSettings {
       'office_lat': officeLat,
       'office_lng': officeLng,
       'program_type': programType,
+      'school_name': schoolName,
+      'course_program': courseProgram,
     };
   }
 
@@ -55,6 +63,8 @@ class InternSettings {
     double? officeLat,
     double? officeLng,
     String? programType,
+    String? schoolName,
+    String? courseProgram,
   }) {
     return InternSettings(
       id: id,
@@ -65,6 +75,8 @@ class InternSettings {
       officeLat: officeLat ?? this.officeLat,
       officeLng: officeLng ?? this.officeLng,
       programType: programType ?? this.programType,
+      schoolName: schoolName ?? this.schoolName,
+      courseProgram: courseProgram ?? this.courseProgram,
     );
   }
 }
