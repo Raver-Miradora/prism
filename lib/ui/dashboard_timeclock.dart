@@ -10,6 +10,7 @@ import 'widgets/prism_drawer.dart';
 import 'widgets/profile_avatar.dart';
 import 'widgets/clock_in_widget.dart';
 import '../services/security_service.dart';
+import '../controllers/reports_controller.dart';
 
 class DashboardTimeclock extends ConsumerWidget {
   const DashboardTimeclock({super.key});
@@ -56,6 +57,8 @@ class DashboardTimeclock extends ConsumerWidget {
                     _buildStatusBar(context, isClockedIn),
                     const SizedBox(height: 32),
                     _buildActionButtons(context, isClockedIn, notifier, state, isAutoTimeEnabled),
+                    const SizedBox(height: 16),
+                    _buildLogAbsenceButton(context, ref),
                     const SizedBox(height: 32),
                     _buildProgressIndicator(context, state, formattedProgress),
                     const SizedBox(height: 100),
@@ -357,6 +360,111 @@ class DashboardTimeclock extends ConsumerWidget {
           isErrorStyle: state.punchPhase == PunchPhase.pmOut,
         ),
       ],
+    );
+  }
+
+  Widget _buildLogAbsenceButton(BuildContext context, WidgetRef ref) {
+    return OutlinedButton.icon(
+      onPressed: () => _showLogAbsenceDialog(context, ref),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: context.colors.onSurfaceVariant,
+        side: BorderSide(color: context.colors.outlineVariant),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+      icon: Icon(Icons.edit_calendar_outlined, size: 18, color: context.colors.onSurfaceVariant),
+      label: Text(
+        'Log Absence / Leave / Holiday',
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: context.colors.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
+
+  void _showLogAbsenceDialog(BuildContext context, WidgetRef ref) {
+    DateTime selectedDate = DateTime.now();
+    String selectedStatus = 'ABSENT';
+    final remarksController = TextEditingController();
+
+    final statusOptions = {
+      'ABSENT': 'Absent',
+      'EXCUSED': 'Excused / Leave',
+      'HOLIDAY_FULL': 'Holiday (Whole Day)',
+      'HOLIDAY_AM': 'Holiday (AM Only)',
+      'HOLIDAY_PM': 'Holiday (PM Only)',
+    };
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Log Status Entry', style: TextStyle(fontFamily: 'Public Sans', fontWeight: FontWeight.bold)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text("Date: ${DateFormat('yyyy-MM-dd').format(selectedDate)}"),
+                trailing: const Icon(Icons.calendar_today, size: 20),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: selectedDate,
+                    firstDate: DateTime(2024),
+                    lastDate: DateTime(2100),
+                  );
+                  if (picked != null) setDialogState(() => selectedDate = picked);
+                },
+              ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                value: selectedStatus,
+                decoration: const InputDecoration(
+                  labelText: 'Attendance Status',
+                  labelStyle: TextStyle(fontSize: 12),
+                  border: OutlineInputBorder(),
+                ),
+                items: statusOptions.entries
+                    .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value, style: const TextStyle(fontSize: 14))))
+                    .toList(),
+                onChanged: (val) => setDialogState(() => selectedStatus = val!),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: remarksController,
+                decoration: const InputDecoration(
+                  labelText: 'Remarks / Specific Reason',
+                  labelStyle: TextStyle(fontSize: 12),
+                  hintText: 'e.g. Sick Leave, National Holiday...',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () async {
+                await ref.read(timeclockControllerProvider.notifier).logAttendanceStatus(
+                  selectedDate,
+                  selectedStatus,
+                  remarksController.text,
+                );
+                // Also refresh the Reports screen if open
+                ref.read(reportsControllerProvider.notifier).loadData(
+                  ref.read(reportsControllerProvider).selectedYear,
+                  ref.read(reportsControllerProvider).selectedMonth,
+                );
+                if (ctx.mounted) Navigator.pop(ctx);
+              },
+              child: const Text('Save Entry'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
