@@ -68,9 +68,13 @@
 	</array>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>PRISM requires your location to lock your Civil Service Form 48 Clock-In coordinates.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>PRISM uses your location in the background to cache GPS coordinates for offline clock-in verification.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>PRISM requires the camera to take a selfie for identity verification upon Clock-In.</string>
+	<string>PRISM requires the camera to take a site photo for fieldwork clock-in verification.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>PRISM needs to save your verified selfie securely.</string>
+	<string>PRISM needs to save your verified site photo securely.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>PRISM uses Face ID to securely verify your identity before logging your attendance. Your biometric data never leaves your device.</string>
 </dict>
 </plist>
