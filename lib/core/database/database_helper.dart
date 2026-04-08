@@ -20,7 +20,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 9,
+      version: 11,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -37,6 +37,12 @@ class DatabaseHelper {
         await db.execute('ALTER TABLE intern_settings ADD COLUMN office_lat REAL');
         await db.execute('ALTER TABLE intern_settings ADD COLUMN office_lng REAL');
         await db.execute('ALTER TABLE intern_settings ADD COLUMN program_type TEXT DEFAULT "OJT"');
+      } catch (_) {}
+    }
+    if (oldVersion < 11) {
+      try {
+        await db.execute('ALTER TABLE intern_settings ADD COLUMN school_name TEXT');
+        await db.execute('ALTER TABLE intern_settings ADD COLUMN course_program TEXT');
       } catch (_) {}
     }
     if (oldVersion < 4) {
@@ -128,6 +134,13 @@ class DatabaseHelper {
       await db.execute('DROP TABLE IF EXISTS intern_settings');
       await _createDB(db, newVersion);
     }
+
+    if (oldVersion < 10) {
+      // V10: Non-destructive — adds record_status for formal attendance classification
+      try {
+        await db.execute("ALTER TABLE time_logs ADD COLUMN record_status TEXT NOT NULL DEFAULT 'PRESENT'");
+      } catch (_) {} // Column may already exist on fresh installs from _createDB
+    }
   }
 
   Future _createDB(Database db, int version) async {
@@ -149,6 +162,7 @@ class DatabaseHelper {
         sync_status INTEGER NOT NULL DEFAULT 0,
         is_fieldwork INTEGER NOT NULL DEFAULT 0,
         status TEXT NOT NULL DEFAULT "WORK",
+        record_status TEXT NOT NULL DEFAULT 'PRESENT',
         remarks TEXT,
         fieldwork_location TEXT,
         fieldwork_purpose TEXT
