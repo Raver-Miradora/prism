@@ -5,8 +5,11 @@ import '../services/location_service.dart';
 import '../services/camera_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+import 'package:local_auth/local_auth.dart';
 import '../core/database/database_helper.dart';
 import 'settings_controller.dart';
+import 'reports_controller.dart';
 
 // Riverpod Setup
 final timeLogRepositoryProvider = Provider((ref) => TimeLogRepository());
@@ -134,45 +137,90 @@ class TimeclockController extends StateNotifier<TimeclockState> {
 
     state = state.copyWith(isLoading: true);
     try {
-      debugPrint('PRISM_LOG: Initializing punch sequence. Phase: $phase');
+      debugPrint('PRISM_LOG: Initializing punch sequence. Phase: $phase, Fieldwork: ${state.isFieldworkMode}');
       final settingsState = _ref.read(settingsProvider);
       final settings = settingsState.settings;
-      debugPrint('PRISM_LOG: Settings loaded. IsNull: ${settings == null}');
       
-      debugPrint('PRISM_LOG: Requesting GPS position...');
-      final position = await _location.getCurrentPosition();
-      debugPrint('PRISM_LOG: GPS position acquired: ${position.latitude}, ${position.longitude}');
-
-      // Location Verification Check (Applies for all punches if not fieldwork)
-      final lat = settings?.officeLat;
-      final lng = settings?.officeLng;
-
-      if (!state.isFieldworkMode && settings != null && lat != null && lng != null) {
-        debugPrint('PRISM_LOG: Verifying office proximity...');
-        final distance = _location.getDistanceBetween(
-          position.latitude, 
-          position.longitude, 
-          lat, 
-          lng,
-        );
-        debugPrint('PRISM_LOG: Distance from base: ${distance.round()}m');
-        
-        if (distance > 200) {
-          throw 'Out of Bounds: You are ${distance.round()}m away from the office. Location verification requires a 200m radius.';
+      // ── STEP 1 (ALWAYS): Biometric Verification ───────────────────────────
+      debugPrint('PRISM_LOG: Requesting device authentication...');
+      final LocalAuthentication auth = LocalAuthentication();
+      final bool canAuthenticateWithBiometrics = await auth.canCheckBiometrics;
+      final bool canAuthenticate = canAuthenticateWithBiometrics || await auth.isDeviceSupported();
+      
+      if (canAuthenticate) {
+        try {
+          final bool didAuthenticate = await auth.authenticate(
+            localizedReason: 'Please authenticate to verify your identity for time-in',
+            options: const AuthenticationOptions(biometricOnly: false),
+          );
+          if (!didAuthenticate) {
+            throw 'Biometric verification failed or was cancelled.';
+          }
+        } on PlatformException catch (e) {
+          // Handle devices with no lock screen security configured
+          if (e.code == 'PasscodeNotSet' || e.code == 'NotEnrolled') {
+            throw 'Security Requirement: Please set up a Screen Lock (PIN, Pattern, or Fingerprint) in your phone\'s Settings before you can use the timeclock.';
+          }
+          // Re-throw any other platform-level auth errors with context
+          throw 'Authentication error (${e.code}): ${e.message ?? "Could not complete verification."}';
         }
+      } else {
+        throw 'Your device does not support identity verification, which is required to safely log time.';
       }
 
-      debugPrint('PRISM_LOG: Launching selfie camera interface...');
-      final photoPath = await _camera.takeSelfie();
-      debugPrint('PRISM_LOG: Selfie captured. Path: $photoPath');
-      
       final timeNow = DateTime.now();
       final timeStr = timeNow.toIso8601String();
       final hour = timeNow.hour;
-      
-      // Time Window Validation & Cross-State Integrity
+
+      // Validate time window first so we fail fast before expensive ops
       _validateTimeWindow(phase, hour);
 
+      String? photoPath;
+      double? posLat;
+      double? posLng;
+
+      if (!state.isFieldworkMode) {
+        // ── BRANCH A: STANDARD OFFICE ────────────────────────────────────────
+        // Step 2A: GPS fetch + Haversine geofence check. NO camera.
+        debugPrint('PRISM_LOG: [Office] Fetching GPS position...');
+        final position = await _location.getCurrentPosition();
+        posLat = position.latitude;
+        posLng = position.longitude;
+        debugPrint('PRISM_LOG: [Office] GPS acquired: $posLat, $posLng');
+
+        final lat = settings?.officeLat;
+        final lng = settings?.officeLng;
+
+        if (settings != null && lat != null && lng != null) {
+          final distance = _location.getDistanceBetween(posLat, posLng, lat, lng);
+          debugPrint('PRISM_LOG: [Office] Distance from base: ${distance.round()}m');
+          if (distance > 50) {
+            throw 'Out of Bounds: You are ${distance.round()} meters away from the deployment zone. You must be within 50 meters to clock in.';
+          }
+        }
+        // photoPath stays null — no camera for standard office clock-ins.
+        debugPrint('PRISM_LOG: [Office] Geofence passed. Saving log without photo.');
+
+      } else {
+        // ── BRANCH B: FIELDWORK ───────────────────────────────────────────────
+        // Step 2B: No geofence check. Capture site photo instead.
+        // Still fetch location for the record but skip the 50m radius check.
+        debugPrint('PRISM_LOG: [Fieldwork] Fetching GPS position for record...');
+        try {
+          final position = await _location.getCurrentPosition();
+          posLat = position.latitude;
+          posLng = position.longitude;
+        } catch (_) {
+          // Location is best-effort in fieldwork — do not block the punch.
+          debugPrint('PRISM_LOG: [Fieldwork] GPS unavailable, proceeding without coordinates.');
+        }
+
+        debugPrint('PRISM_LOG: [Fieldwork] Launching site photo camera...');
+        photoPath = await _camera.takeSelfie();
+        debugPrint('PRISM_LOG: [Fieldwork] Site photo captured. Path: $photoPath');
+      }
+
+      // ── STEP 3 (ALWAYS): Persist to SQLite ──────────────────────────────────
       TimeLog log;
 
       if (phase == PunchPhase.amIn) {
@@ -180,9 +228,9 @@ class TimeclockController extends StateNotifier<TimeclockState> {
         log = TimeLog(
           date: timeStr.split('T')[0],
           amArrivalTime: timeStr,
-          latAmArrival: position.latitude,
-          lngAmArrival: position.longitude,
-          amArrivalPhotoPath: photoPath,
+          latAmArrival: posLat ?? 0.0,
+          lngAmArrival: posLng ?? 0.0,
+          amArrivalPhotoPath: photoPath, // null for office, path for fieldwork
           isFieldwork: state.isFieldworkMode,
           fieldworkLocation: state.fieldworkLocation,
           fieldworkPurpose: state.fieldworkPurpose,
@@ -193,25 +241,20 @@ class TimeclockController extends StateNotifier<TimeclockState> {
       } else {
         final existingLog = state.activeLog;
         if (existingLog == null) {
-           throw 'System Error: Active log lost during punch. Please restart the app.';
+          throw 'System Error: Active log lost during punch. Please restart the app.';
         }
-        
         debugPrint('PRISM_LOG: Syncing punch with existing session ID: ${existingLog.id}');
-        log = existingLog;
-        
-        if (phase == PunchPhase.pmOut) {
-          log = log.copyWith(
-            pmDepartureTime: timeStr,
-            latPmDeparture: position.latitude,
-            lngPmDeparture: position.longitude,
-            pmDeparturePhotoPath: photoPath,
-          );
-        }
+        log = existingLog.copyWith(
+          pmDepartureTime: timeStr,
+          latPmDeparture: posLat ?? 0.0,
+          lngPmDeparture: posLng ?? 0.0,
+          pmDeparturePhotoPath: photoPath, // null for office, path for fieldwork
+        );
         await _repository.updateLog(log);
-        debugPrint('PRISM_LOG: Phase transition committed.');
+        debugPrint('PRISM_LOG: PM Out transition committed.');
       }
       
-      // If PM Out complete, reset fieldwork mode
+      // Reset fieldwork mode after PM Out
       if (phase == PunchPhase.pmOut && state.isFieldworkMode) {
         state = state.copyWith(
           isFieldworkMode: false,
@@ -222,6 +265,11 @@ class TimeclockController extends StateNotifier<TimeclockState> {
       
       debugPrint('PRISM_LOG: Punch successful. Refreshing UI state...');
       await _loadInitialState();
+      // Sync the Reports Attendance Registry so it reflects the new punch immediately
+      _ref.read(reportsControllerProvider.notifier).loadData(
+        _ref.read(reportsControllerProvider).selectedYear,
+        _ref.read(reportsControllerProvider).selectedMonth,
+      );
     } catch (e, stack) {
       debugPrint('PRISM_CRITICAL_FAILURE: ${e.toString()}');
       debugPrint('STACK_TRACE: $stack');
