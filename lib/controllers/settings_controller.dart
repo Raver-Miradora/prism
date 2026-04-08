@@ -58,6 +58,8 @@ class SettingsController extends StateNotifier<SettingsState> {
     required String supervisor,
     required int targetHours,
     required String timeIn,
+    required String schoolName,
+    required String courseProgram,
   }) async {
     state = state.copyWith(isLoading: true);
     final updatedProfile = InternProfile(
@@ -72,12 +74,16 @@ class SettingsController extends StateNotifier<SettingsState> {
     final updatedSettings = state.settings?.copyWith(
       targetHours: targetHours,
       expectedTimeIn: timeIn,
+      schoolName: schoolName,
+      courseProgram: courseProgram,
     ) ?? InternSettings(
       id: 1,
       targetHours: targetHours,
       expectedTimeIn: timeIn,
       expectedTimeOut: '17:00',
       lunchBreakMins: 60,
+      schoolName: schoolName,
+      courseProgram: courseProgram,
     );
     
     await db.update(
