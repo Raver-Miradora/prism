@@ -34,7 +34,7 @@ dependencies:
   material_symbols_icons: ^4.0.0
   url_launcher: ^6.3.2
   shared_preferences: ^2.2.2
-  google_mlkit_face_detection: ^0.13.2
+  local_auth: ^2.2.0
 
 dev_dependencies:
   flutter_test:
