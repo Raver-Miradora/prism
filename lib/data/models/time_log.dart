@@ -22,7 +22,8 @@ class TimeLog {
   final bool isFieldwork;
   final String? fieldworkLocation;
   final String? fieldworkPurpose;
-  final String status; // WORK, ABSENT, EXCUSED
+  final String status;         // WORK, ABSENT, EXCUSED, HOLIDAY_*
+  final String recordStatus;   // PRESENT, ABSENT, LEAVE, HOLIDAY
   final String? remarks;
 
   TimeLog({
@@ -43,6 +44,7 @@ class TimeLog {
     this.fieldworkLocation,
     this.fieldworkPurpose,
     this.status = 'WORK',
+    this.recordStatus = 'PRESENT',
     this.remarks,
   });
 
@@ -65,6 +67,7 @@ class TimeLog {
       fieldworkLocation: map['fieldwork_location'] as String?,
       fieldworkPurpose: map['fieldwork_purpose'] as String?,
       status: (map['status'] as String?) ?? 'WORK',
+      recordStatus: (map['record_status'] as String?) ?? 'PRESENT',
       remarks: map['remarks'] as String?,
     );
   }
@@ -88,6 +91,7 @@ class TimeLog {
       'fieldwork_location': fieldworkLocation,
       'fieldwork_purpose': fieldworkPurpose,
       'status': status,
+      'record_status': recordStatus,
       'remarks': remarks,
     };
   }
@@ -110,6 +114,7 @@ class TimeLog {
     String? fieldworkLocation,
     String? fieldworkPurpose,
     String? status,
+    String? recordStatus,
     String? remarks,
   }) {
     return TimeLog(
@@ -130,6 +135,7 @@ class TimeLog {
       fieldworkLocation: fieldworkLocation ?? this.fieldworkLocation,
       fieldworkPurpose: fieldworkPurpose ?? this.fieldworkPurpose,
       status: status ?? this.status,
+      recordStatus: recordStatus ?? this.recordStatus,
       remarks: remarks ?? this.remarks,
     );
   }
