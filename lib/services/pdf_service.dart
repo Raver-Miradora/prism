@@ -35,18 +35,18 @@ class PdfService {
   }
 
   // ─────────────────────────────────────────────────────────────────
-  // MONTHLY ACCOMPLISHMENT REPORT PDF
+  // ACCOMPLISHMENT REPORT PDF
   // ─────────────────────────────────────────────────────────────────
-  static Future<void> generateAndPrintMonthlyReport(
+  static Future<void> generateAndPrintAccomplishmentReport(
     List<DailyReport> reports,
     InternProfile profile,
-    int year,
-    int month,
+    InternSettings settings,
+    DateTime start,
+    DateTime end,
     {String? customSummaryBullets}
   ) async {
     final pdf = pw.Document();
-    final monthName = DateFormat('MMMM yyyy').format(DateTime(year, month));
-
+    
     // Filter reports that have notes
     final activeReports = reports
         .where((r) => r.rawNotes.isNotEmpty)
@@ -84,35 +84,46 @@ class PdfService {
     }
 
     // Determine date range label
-    final firstDay = 1;
-    final lastDay = DateTime(year, month + 1, 0).day;
-    final periodLabel = '${DateFormat('MMMM').format(DateTime(year, month))} $firstDay-$lastDay, $year';
+    final df = DateFormat('MMMM d, yyyy');
+    final rangeLabel = '${df.format(start)} - ${df.format(end)}';
 
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(40),
+        margin: const pw.EdgeInsets.all(60),
         build: (pw.Context context) {
           return [
+            // ── HEADER REDESIGN ──────────────────────────────────────────
             pw.Center(
-              child: pw.Text('Monthly Accomplishment Report',
-                  style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
+               child: pw.Column(
+                 children: [
+                   pw.Text(settings.programType == 'OJT' ? 'ON-THE-JOB TRAINING' : settings.programType.toUpperCase(),
+                      style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+                   pw.Container(
+                     margin: const pw.EdgeInsets.symmetric(vertical: 2),
+                     width: 250,
+                     decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide(width: 1.5))),
+                   ),
+                   pw.Text('ACCOMPLISHMENT REPORT',
+                      style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
+                   pw.SizedBox(height: 12),
+                 ]
+               )
             ),
-            pw.SizedBox(height: 4),
-            pw.Center(child: pw.Text(monthName, style: const pw.TextStyle(fontSize: 12))),
-            pw.SizedBox(height: 16),
+            
+            pw.Text('The following listed below are my accomplishments under ${profile.agencyOffice.isEmpty ? "[Office Assigned]" : profile.agencyOffice}.',
+                style: const pw.TextStyle(fontSize: 10)),
+            pw.SizedBox(height: 12),
 
             pw.Text('Name: ${profile.name.isEmpty ? "________________________" : profile.name}',
-                style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
-            pw.Text('Agency/Office: ${profile.agencyOffice.isEmpty ? "________________________" : profile.agencyOffice}',
-                style: const pw.TextStyle(fontSize: 10)),
+                style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
             pw.SizedBox(height: 20),
 
             // Period | Nature of Works table
             pw.Table(
               border: pw.TableBorder.all(width: 0.5),
               columnWidths: {
-                0: const pw.FlexColumnWidth(2),
+                0: const pw.FlexColumnWidth(2.5),
                 1: const pw.FlexColumnWidth(5),
               },
               children: [
@@ -135,7 +146,7 @@ class PdfService {
                   children: [
                     pw.Padding(
                       padding: const pw.EdgeInsets.all(8),
-                      child: pw.Text(periodLabel, style: const pw.TextStyle(fontSize: 9)),
+                      child: pw.Center(child: pw.Text(rangeLabel, style: const pw.TextStyle(fontSize: 9), textAlign: pw.TextAlign.center)),
                     ),
                     pw.Padding(
                       padding: const pw.EdgeInsets.all(8),
@@ -153,87 +164,78 @@ class PdfService {
                 ),
               ],
             ),
+            pw.SizedBox(height: 40),
 
-            // Certification section - Right Aligned
-            pw.Align(
-              alignment: pw.Alignment.centerRight,
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.center,
-                children: [
-                   pw.Text('Prepared & submitted by;', style: const pw.TextStyle(fontSize: 10)),
-                   pw.SizedBox(height: 24),
-                   pw.Container(
-                    width: 200,
-                    decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide())),
-                  ),
-                  pw.SizedBox(height: 2),
-                  pw.Text(
-                    profile.name.isEmpty ? '' : profile.name.toUpperCase(),
-                    style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
-                  ),
-                ],
-              ),
+            // ── SIGNATURE BLOCK ──────────────────────────────────────────
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                // Noted by - Left
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text('Noted by:', style: const pw.TextStyle(fontSize: 10)),
+                    pw.SizedBox(height: 24),
+                    pw.Column(
+                      children: [
+                        pw.Container(
+                          width: 180,
+                          decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide())),
+                        ),
+                        pw.SizedBox(height: 2),
+                        pw.Text(
+                          profile.supervisorName.isEmpty ? '' : profile.supervisorName.toUpperCase(),
+                          style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
+                        ),
+                        pw.Text('OFFICE HEAD', style: const pw.TextStyle(fontSize: 8)),
+                      ],
+                    ),
+                  ],
+                ),
+                // Prepared by - Right
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.center,
+                  children: [
+                    pw.Text('Prepared & Submitted by:', style: const pw.TextStyle(fontSize: 10)),
+                    pw.SizedBox(height: 20),
+                    pw.Text(
+                      profile.name.isEmpty ? '' : profile.name.toUpperCase(),
+                      style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+                    ),
+                    pw.Container(
+                      width: 180,
+                      decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide())),
+                    ),
+                    pw.SizedBox(height: 2),
+                    pw.Text(
+                      settings.programType.toUpperCase(),
+                      style: const pw.TextStyle(fontSize: 9),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            pw.SizedBox(height: 32),
+            pw.SizedBox(height: 40),
 
-            // Noted by - Left Aligned
-            pw.Align(
-              alignment: pw.Alignment.centerLeft,
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Text('Noted by:', style: const pw.TextStyle(fontSize: 10)),
-                  pw.SizedBox(height: 24),
-                  pw.Column(
-                    children: [
-                      pw.Container(
-                        width: 200,
-                        decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide())),
-                      ),
-                      pw.SizedBox(height: 2),
-                      pw.Text(
-                        profile.supervisorName.isEmpty ? '' : profile.supervisorName.toUpperCase(),
-                        style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
-                      ),
-                      pw.Text('OFFICE HEAD', style: const pw.TextStyle(fontSize: 9)),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            pw.SizedBox(height: 32),
-
-            // School and Course - Right Aligned
-            pw.Align(
-              alignment: pw.Alignment.centerRight,
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.end,
-                children: [
-                  pw.Row(
-                    mainAxisSize: pw.MainAxisSize.min,
-                    children: [
-                      pw.Text('NAME OF SCHOOL: ', style: const pw.TextStyle(fontSize: 10)),
-                      pw.Container(
-                        width: 150,
-                        decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide())),
-                        child: pw.Text(' ', style: const pw.TextStyle(fontSize: 10)),
-                      ),
-                    ],
-                  ),
-                  pw.SizedBox(height: 8),
-                  pw.Row(
-                    mainAxisSize: pw.MainAxisSize.min,
-                    children: [
-                      pw.Text('COURSE: ', style: const pw.TextStyle(fontSize: 10, letterSpacing: 0.5)),
-                      pw.Container(
-                        width: 150,
-                        decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide())),
-                        child: pw.Text(' ', style: const pw.TextStyle(fontSize: 10)),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+            // ── SCHOOL & COURSE DATA ─────────────────────────────────────
+            pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Row(
+                  children: [
+                    pw.Text('NAME OF SCHOOL: ', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+                    pw.Text(settings.schoolName.toUpperCase(), style: const pw.TextStyle(fontSize: 10)),
+                  ],
+                ),
+                pw.SizedBox(height: 4),
+                pw.Row(
+                  children: [
+                    pw.Text('COURSE: ', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+                    pw.Text(settings.courseProgram.toUpperCase(), style: const pw.TextStyle(fontSize: 10)),
+                  ],
+                ),
+              ],
             ),
           ];
         },
@@ -242,7 +244,7 @@ class PdfService {
 
     await Printing.layoutPdf(
       onLayout: (PdfPageFormat format) async => pdf.save(),
-      name: 'Monthly_Report_${profile.name.replaceAll(" ", "_")}_${month}_$year',
+      name: 'Accomplishment_Report_${profile.name.replaceAll(" ", "_")}',
     );
   }
 
@@ -254,7 +256,7 @@ class PdfService {
     InternProfile profile, 
     InternSettings settings, 
     int year, 
-    int month
+    int month,
   ) async {
     final pdfData = await _buildForm48Pdf(logs, profile, settings, year, month);
     await Printing.layoutPdf(
@@ -268,7 +270,7 @@ class PdfService {
     InternProfile profile, 
     InternSettings settings, 
     int year, 
-    int month
+    int month,
   ) async {
     final pdf = pw.Document();
 
@@ -289,12 +291,11 @@ class PdfService {
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(24),
         build: (pw.Context context) {
-          // Wrap two identical DTRs in a Row with a Spacer
           return pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
               _buildSingleForm48Copy(logMap, profile, settings, monthName, daysInMonth, year, month),
-              pw.SizedBox(width: 20), // Vertical Divider space
+              pw.SizedBox(width: 20),
               _buildSingleForm48Copy(logMap, profile, settings, monthName, daysInMonth, year, month),
             ],
           );
@@ -331,7 +332,7 @@ class PdfService {
     final titleBold = pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11);
 
     return pw.Container(
-      width: 250, // Perfect for half A4 width
+      width: 250,
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.center,
         children: [
@@ -421,6 +422,74 @@ class PdfService {
     );
   }
 
+  // ─────────────────────────────────────────────────────────────────
+  // Smart Filler: maps 2 DB punches into the 4 CSC Form 48 columns
+  // ─────────────────────────────────────────────────────────────────
+  static ({String amIn, String amOut, String pmIn, String pmOut}) _resolveForm48Slots(TimeLog log) {
+    final punch1 = log.amArrivalTime != null ? DateTime.parse(log.amArrivalTime!) : null;
+    final punch2 = log.pmDepartureTime != null ? DateTime.parse(log.pmDepartureTime!) : null;
+
+    // Prefix for fieldwork
+    final p1prefix = log.isFieldwork ? '*' : '';
+
+    if (punch1 == null && punch2 == null) {
+      return (amIn: '', amOut: '', pmIn: '', pmOut: '');
+    }
+
+    final noon = punch1 != null
+        ? DateTime(punch1.year, punch1.month, punch1.day, 12, 0)
+        : DateTime(punch2!.year, punch2.month, punch2.day, 12, 0);
+    final pm1 = punch1 != null
+        ? DateTime(punch1.year, punch1.month, punch1.day, 13, 0)
+        : DateTime(punch2!.year, punch2.month, punch2.day, 13, 0);
+
+    // Full shift: Punch 1 before noon AND Punch 2 after 1 PM
+    if (punch1 != null && punch2 != null &&
+        punch1.isBefore(noon) && punch2.isAfter(pm1)) {
+      return (
+        amIn: '$p1prefix${DateFormat('hh:mm').format(punch1)}',
+        amOut: '12:00',
+        pmIn: '01:00',
+        pmOut: DateFormat('hh:mm').format(punch2),
+      );
+    }
+
+    // Morning half-day: both punches at or before 1 PM
+    if (punch1 != null && punch2 != null &&
+        !punch1.isAfter(pm1) && !punch2.isAfter(pm1)) {
+      return (
+        amIn: '$p1prefix${DateFormat('hh:mm').format(punch1)}',
+        amOut: DateFormat('hh:mm').format(punch2),
+        pmIn: '',
+        pmOut: '',
+      );
+    }
+
+    // Afternoon half-day: both punches at or after noon
+    if (punch1 != null && punch2 != null &&
+        !punch1.isBefore(noon) && !punch2.isBefore(noon)) {
+      return (
+        amIn: '',
+        amOut: '',
+        pmIn: '$p1prefix${DateFormat('hh:mm').format(punch1)}',
+        pmOut: DateFormat('hh:mm').format(punch2),
+      );
+    }
+
+    // Fallback: only one punch recorded so far
+    if (punch1 != null && punch2 == null) {
+      final isAfternoon = !punch1.isBefore(noon);
+      return (
+        amIn: isAfternoon ? '' : '$p1prefix${DateFormat('hh:mm').format(punch1)}',
+        amOut: '',
+        pmIn: isAfternoon ? '$p1prefix${DateFormat('hh:mm').format(punch1)}' : '',
+        pmOut: '',
+      );
+    }
+
+    return (amIn: '', amOut: '', pmIn: '', pmOut: '');
+  }
+
   static pw.Widget _buildCSCForm48Grid(
     Map<int, TimeLog> logMap, 
     InternSettings settings, 
@@ -432,7 +501,9 @@ class PdfService {
     int totalUndertimeMins = 0;
 
     final hBold = pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 6);
-    final cellStyle = const pw.TextStyle(fontSize: 6.5);
+    final cellStyle = const pw.TextStyle(fontSize: 6);
+    final statusStyle = pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 6, color: PdfColors.grey700);
+    final weekendStyle = pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 6, color: PdfColors.grey500);
 
     pw.Widget cell(String text, {pw.TextStyle? style}) {
       return pw.Padding(
@@ -443,90 +514,121 @@ class PdfService {
 
     final rows = <pw.TableRow>[];
 
-    // Header 1
+    // ── Header row 1: group labels (CSC Form 48 exact) ─────────────────────
     rows.add(pw.TableRow(
+      decoration: const pw.BoxDecoration(color: PdfColors.grey200),
       children: [
         cell('Day', style: hBold),
-        pw.Container(height: 12, child: pw.Center(child: pw.Text('AM Arrival', style: hBold))),
-        pw.Container(height: 12, child: pw.Center(child: pw.Text('PM Departure', style: hBold))),
-        pw.Container(height: 12, child: pw.Center(child: pw.Text('Undertime Hrs', style: hBold))),
-        pw.Container(height: 12, child: pw.Center(child: pw.Text('Undertime Mins', style: hBold))),
+        cell('A.M.', style: hBold),
+        cell('A.M.', style: hBold),
+        cell('P.M.', style: hBold),
+        cell('P.M.', style: hBold),
+        cell('Undertime', style: hBold),
+        cell('Undertime', style: hBold),
       ],
     ));
 
-    final timeFormatter = DateFormat('hh:mm');
+    // ── Header row 2: sub-labels (Arrival / Departure) ───────────────────
+    rows.add(pw.TableRow(
+      decoration: const pw.BoxDecoration(color: PdfColors.grey100),
+      children: [
+        cell('', style: hBold),
+        cell('Arrival', style: hBold),
+        cell('Departure', style: hBold),
+        cell('Arrival', style: hBold),
+        cell('Departure', style: hBold),
+        cell('Hours', style: hBold),
+        cell('Minutes', style: hBold),
+      ],
+    ));
 
     for (int day = 1; day <= daysInMonth; day++) {
+      final date = DateTime(year, month, day);
+      final isWeekend = date.weekday == DateTime.saturday || date.weekday == DateTime.sunday;
       final log = logMap[day];
 
-      String amArr = '';
-      String pmDep = '';
-      String utHrs = '';
-      String utMins = '';
-
-      if (log != null) {
-        final isWork = log.status == 'WORK';
-        final isFullHoliday = log.status == 'HOLIDAY_FULL';
-        final isAMHoliday = log.status == 'HOLIDAY_AM';
-        final isPMHoliday = log.status == 'HOLIDAY_PM';
-
-        if (isFullHoliday) {
-          amArr = 'HOLIDAY';
-          pmDep = log.remarks ?? '';
-        } else if (isAMHoliday) {
-          amArr = 'HOLIDAY';
-        } else if (isPMHoliday) {
-          pmDep = 'HOLIDAY';
-        } else if (log.status == 'ABSENT' || log.status == 'EXCUSED') {
-          amArr = log.status;
-          pmDep = log.remarks ?? '';
-        }
-        
-        if (isWork) {
-           if (log.amArrivalTime != null) {
-             amArr = timeFormatter.format(DateTime.parse(log.amArrivalTime!));
-             if (log.isFieldwork) amArr = '*$amArr';
-           }
-           if (log.pmDepartureTime != null) {
-             pmDep = timeFormatter.format(DateTime.parse(log.pmDepartureTime!));
-           }
-
-           // Undertime calculation
-           int dayLate = HourglassEngine.calculateLateDeductions(log, settings.expectedTimeIn);
-           int dayEarly = 0;
-           if (log.pmDepartureTime != null) {
-              try {
-                final timeOut = DateTime.parse(log.pmDepartureTime!);
-                final expectedOut = DateFormat("HH:mm").parse(settings.expectedTimeOut);
-                final expectedOutDT = DateTime(timeOut.year, timeOut.month, timeOut.day, expectedOut.hour, expectedOut.minute);
-                final diffOut = expectedOutDT.difference(timeOut);
-                if (diffOut.inMinutes > 0) dayEarly = diffOut.inMinutes;
-              } catch (_) {}
-           }
-
-           final dayTotalUndertime = dayLate + dayEarly;
-           if (dayTotalUndertime > 0) {
-             final h = dayTotalUndertime ~/ 60;
-             final m = dayTotalUndertime % 60;
-             totalUndertimeHours += h;
-             totalUndertimeMins += m;
-             if (h > 0) utHrs = '$h';
-             if (m > 0) utMins = '$m';
-           }
-        }
+      // ── Weekend rows: print day name centered across all time cols ──────────
+      if (isWeekend) {
+        final label = date.weekday == DateTime.saturday ? 'SATURDAY' : 'SUNDAY';
+        rows.add(pw.TableRow(children: [
+          cell('$day'),
+          pw.Padding(
+            padding: const pw.EdgeInsets.symmetric(vertical: 1.5, horizontal: 1),
+            child: pw.Center(child: pw.Text(label, style: weekendStyle, textAlign: pw.TextAlign.center)),
+          ),
+          cell(''), cell(''), cell(''), cell(''), cell(''),
+        ]));
+        continue;
       }
 
-      rows.add(pw.TableRow(
-        children: [
+      if (log == null) {
+        // Empty weekday row — blank boxes
+        rows.add(pw.TableRow(children: [
           cell('$day'),
-          cell(amArr),
-          cell(pmDep),
-          cell(utHrs),
-          cell(utMins),
-        ],
-      ));
+          cell(''), cell(''), cell(''), cell(''), cell(''), cell(''),
+        ]));
+        continue;
+      }
+
+      final isWork = log.status == 'WORK';
+
+      // ── Status rows: ABSENT / LEAVE / HOLIDAY span all 4 time cols ───────
+      if (!isWork) {
+        String label = log.status;
+        if (label == 'HOLIDAY_FULL') label = 'HOLIDAY';
+        if (label == 'HOLIDAY_AM')   label = 'HOLIDAY (AM)';
+        if (label == 'HOLIDAY_PM')   label = 'HOLIDAY (PM)';
+        if (label == 'EXCUSED')      label = 'LEAVE';
+
+        rows.add(pw.TableRow(children: [
+          cell('$day'),
+          pw.Padding(
+            padding: const pw.EdgeInsets.symmetric(vertical: 1.5, horizontal: 1),
+            child: pw.Center(child: pw.Text(label, style: statusStyle, textAlign: pw.TextAlign.center)),
+          ),
+          cell(''), cell(''), cell(''), cell(''), cell(''),
+        ]));
+        continue;
+      }
+
+      // ── Work day: Smart Filler + Undertime always shown per CSC Form 48 ───
+      final slots = _resolveForm48Slots(log);
+
+      int dayLate = HourglassEngine.calculateLateDeductions(log, settings.expectedTimeIn);
+      int dayEarly = 0;
+      if (log.pmDepartureTime != null) {
+        try {
+          final timeOut = DateTime.parse(log.pmDepartureTime!);
+          final expectedOut = DateFormat('HH:mm').parse(settings.expectedTimeOut);
+          final expectedOutDT = DateTime(timeOut.year, timeOut.month, timeOut.day, expectedOut.hour, expectedOut.minute);
+          final diffOut = expectedOutDT.difference(timeOut);
+          if (diffOut.inMinutes > 0) dayEarly = diffOut.inMinutes;
+        } catch (_) {}
+      }
+      final dayTotalUndertime = dayLate + dayEarly;
+      String utHrs = '';
+      String utMins = '';
+      if (dayTotalUndertime > 0) {
+        final h = dayTotalUndertime ~/ 60;
+        final m = dayTotalUndertime % 60;
+        totalUndertimeHours += h;
+        totalUndertimeMins += m;
+        if (h > 0) utHrs = '$h';
+        utMins = '$m';
+      }
+
+      rows.add(pw.TableRow(children: [
+        cell('$day'),
+        cell(slots.amIn),
+        cell(slots.amOut),
+        cell(slots.pmIn),
+        cell(slots.pmOut),
+        cell(utHrs),
+        cell(utMins),
+      ]));
     }
 
+    // ── TOTAL row ────────────────────────────────────────────────────
     totalUndertimeHours += totalUndertimeMins ~/ 60;
     totalUndertimeMins = totalUndertimeMins % 60;
 
@@ -534,21 +636,23 @@ class PdfService {
       decoration: const pw.BoxDecoration(border: pw.Border(top: pw.BorderSide(width: 1))),
       children: [
         cell('TOTAL', style: hBold),
-        cell(''),
-        cell(''),
+        cell(''), cell(''), cell(''), cell(''),
         cell('$totalUndertimeHours', style: hBold),
         cell('$totalUndertimeMins', style: hBold),
       ],
     ));
 
+    // Column widths matching CSC Form 48 proportions
     return pw.Table(
       border: pw.TableBorder.all(width: 0.5),
-      columnWidths: {
-        0: const pw.FlexColumnWidth(1.2), // Day
-        1: const pw.FlexColumnWidth(2.5), // AM Arrival
-        2: const pw.FlexColumnWidth(2.5), // PM Departure
-        3: const pw.FlexColumnWidth(1.5), // Hours
-        4: const pw.FlexColumnWidth(1.5), // Minutes
+      columnWidths: const {
+        0: pw.FlexColumnWidth(1.2),  // Day
+        1: pw.FlexColumnWidth(2.0),  // AM Arrival
+        2: pw.FlexColumnWidth(2.0),  // AM Departure
+        3: pw.FlexColumnWidth(2.0),  // PM Arrival
+        4: pw.FlexColumnWidth(2.0),  // PM Departure
+        5: pw.FlexColumnWidth(1.2),  // UT Hours
+        6: pw.FlexColumnWidth(1.2),  // UT Minutes
       },
       children: rows,
     );
