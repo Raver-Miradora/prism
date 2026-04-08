@@ -386,7 +386,7 @@ class _YapToReportJournalState extends ConsumerState<YapToReportJournal> {
               if (isLoading)
                 const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
               else
-                IconButton(
+                ElevatedButton.icon(
                   onPressed: () {
                     final currentText = _notesController.text.trim();
                     if (currentText.isEmpty) return;
@@ -403,10 +403,19 @@ class _YapToReportJournalState extends ConsumerState<YapToReportJournal> {
                        if (context.mounted) AppFeedback.showSuccess(context, 'Accomplishments polished by AI.');
                     });
                   },
-                  icon: Icon(Icons.auto_awesome, color: context.colors.primary, size: 20),
-                  tooltip: 'Inline Polish',
-                  constraints: const BoxConstraints(),
-                  padding: EdgeInsets.zero,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: context.colors.secondary,
+                    foregroundColor: context.colors.onSecondary,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    elevation: 2,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  icon: const Icon(Icons.auto_awesome, size: 14),
+                  label: const Text(
+                    'AI Polish',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                  ),
                 )
             ],
           ),
@@ -442,29 +451,50 @@ class _YapToReportJournalState extends ConsumerState<YapToReportJournal> {
     return Center(
       child: OutlinedButton.icon(
         onPressed: isLoading ? null : () async {
-          final summary = await ref.read(yapJournalProvider.notifier).retrieveMonthlySummary();
+          final range = await showDateRangePicker(
+            context: context, 
+            firstDate: DateTime(2025), 
+            lastDate: DateTime.now().add(const Duration(days: 365)),
+            currentDate: DateTime.now(),
+            saveText: 'GO',
+            builder: (context, child) {
+              return Theme(
+                data: Theme.of(context).copyWith(
+                  colorScheme: context.colors,
+                ),
+                child: child!,
+              );
+            }
+          );
+
+          if (range == null) return;
+          if (!context.mounted) return;
+
+          final summary = await ref.read(yapJournalProvider.notifier).retrieveRangeSummary(range.start, range.end);
           if (!context.mounted) return;
           if (summary == null || summary.isEmpty) {
-             AppFeedback.showError(context, "No completed entries found for this month.");
+             AppFeedback.showError(context, "No completed entries found for selected range.");
              return;
           }
           
           Navigator.push(context, MaterialPageRoute(
             builder: (ctx) => DocumentPreviewScreen(
-              title: 'Monthly Accomplishments',
+              title: 'Accomplishment Report Preview',
               initialContent: summary,
               onApprove: (docCtx, finalSummary) async {
                   final repo = DailyReportRepository();
-                  final reports = await repo.getReportsForMonth(selectedDate.year, selectedDate.month);
+                  final reports = await repo.getReportsForRange(range.start, range.end);
                   final settingsState = ref.read(settingsProvider);
                   final profile = settingsState.profile;
-                  if (profile == null) return;
+                  final settings = settingsState.settings;
+                  if (profile == null || settings == null) return;
 
-                  await PdfService.generateAndPrintMonthlyReport(
+                  await PdfService.generateAndPrintAccomplishmentReport(
                     reports,
                     profile,
-                    selectedDate.year,
-                    selectedDate.month,
+                    settings,
+                    range.start,
+                    range.end,
                     customSummaryBullets: finalSummary,
                   );
               }
@@ -478,9 +508,9 @@ class _YapToReportJournalState extends ConsumerState<YapToReportJournal> {
           foregroundColor: context.colors.primary,
         ),
         icon: const Icon(Icons.picture_as_pdf),
-        label: Text(
-          'Export Monthly Report (${DateFormat('MMMM').format(selectedDate)})',
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+        label: const Text(
+          'Generate Accomplishment Report',
+          style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
         ),
       ),
     );
