@@ -120,11 +120,11 @@ class YapJournalController extends StateNotifier<YapJournalState> {
     state = state.copyWith(reportStatus: AsyncValue.data(updatedReport));
   }
 
-  /// Aggregate all notes for the current month and summarize for Preview
-  Future<String?> retrieveMonthlySummary() async {
+  /// Aggregate all notes for a custom range and summarize for Preview
+  Future<String?> retrieveRangeSummary(DateTime start, DateTime end) async {
     state = state.copyWith(reportStatus: const AsyncValue.loading());
     try {
-      final reports = await _repo.getReportsForMonth(state.selectedDate.year, state.selectedDate.month);
+      final reports = await _repo.getReportsForRange(start, end);
       final allNotes = reports.map((r) => r.rawNotes).where((n) => n.isNotEmpty).toList();
       
       if (allNotes.isEmpty) {
