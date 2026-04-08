@@ -90,7 +90,11 @@ class _OnboardingPage2State extends ConsumerState<OnboardingPage2> {
     setState(() => _isCapturing = true);
     try {
       final LocationService locationService = LocationService();
-      Position position = await locationService.getCurrentPosition();
+      // Use a 15-second timeout for onboarding — GPS needs extra time indoors
+      // to get an accurate base coordinate for the office. Do NOT reduce this.
+      Position position = await locationService.getCurrentPosition(
+        freshTimeout: const Duration(seconds: 15),
+      );
       
       ref.read(onboardingProvider.notifier).updateOfficeLocation(position.latitude, position.longitude);
       
@@ -105,15 +109,15 @@ class _OnboardingPage2State extends ConsumerState<OnboardingPage2> {
     } catch (e) {
       if (mounted) {
         String errorMsg = e.toString();
-        if (errorMsg.contains('timeout') || errorMsg.contains('signal weak')) {
-          errorMsg = 'GPS signal weak. Try moving near a window or connect to Wi-Fi for initial setup.';
+        if (errorMsg.contains('Unable to verify') || errorMsg.contains('timeout') || errorMsg.contains('signal weak')) {
+          errorMsg = 'Unable to verify precise location. Please stand near a window or connect to the office Wi-Fi momentarily to set your exact base coordinates.';
         }
         
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(errorMsg), 
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 6),
+            duration: const Duration(seconds: 8),
             action: SnackBarAction(
               label: 'RETRY', 
               textColor: Colors.white,
@@ -173,6 +177,26 @@ class _OnboardingPage2State extends ConsumerState<OnboardingPage2> {
             TextField(
               onChanged: notifier.updateName,
               decoration: _inputDecoration('e.g. Juan De La Cruz', Icons.person_outline),
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 32),
+
+            // School Name Input
+            _buildInputLabel('NAME OF SCHOOL'),
+            const SizedBox(height: 12),
+            TextField(
+              onChanged: notifier.updateSchoolName,
+              decoration: _inputDecoration('e.g. Partido State University', Icons.school_outlined),
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 32),
+
+            // Course Program Input
+            _buildInputLabel('COURSE / PROGRAM'),
+            const SizedBox(height: 12),
+            TextField(
+              onChanged: notifier.updateCourseProgram,
+              decoration: _inputDecoration('e.g. BS Information Technology', Icons.history_edu_outlined),
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 32),
