@@ -10,8 +10,9 @@ class LocationException implements Exception {
 }
 
 class LocationService {
-  /// Ensures permissions are granted and returns the current position with a safety timeout.
-  Future<Position> getCurrentPosition({Duration timeout = const Duration(seconds: 15)}) async {
+  /// Ensures permissions are granted and returns the position using cached records first.
+  /// If the cache is stale, fetches a fresh low-accuracy position with a strict timeout.
+  Future<Position> getCurrentPosition({Duration freshTimeout = const Duration(seconds: 5)}) async {
     bool serviceEnabled;
     LocationPermission permission;
 
@@ -40,11 +41,24 @@ class LocationService {
     }
 
     try {
+      // 1. Check Cached Location First
+      final Position? lastKnownPosition = await Geolocator.getLastKnownPosition();
+      
+      if (lastKnownPosition != null) {
+        final age = DateTime.now().difference(lastKnownPosition.timestamp);
+        // If the position is less than 5 minutes old, return it instantly
+        if (age < const Duration(minutes: 5)) {
+          return lastKnownPosition;
+        }
+      }
+
+      // 2. Low-Accuracy Fresh Fetch (with 3. Strict Timeout Rule)
       return await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high, // Set to High instead of BestForNavigation to prevent offline freezing
-      ).timeout(timeout); // Hard enforce dart timeout
+        desiredAccuracy: LocationAccuracy.low, // Lower accuracy prevents trying to lock onto distant GPS satellites
+      ).timeout(freshTimeout);
+
     } on TimeoutException {
-      throw LocationException('GPS signal weak or timed out. Try moving near a window or using Wi-Fi for setup.');
+      throw LocationException('Unable to verify location. Please step outside or connect to the internet momentarily.');
     } catch (e) {
       throw LocationException('Could not determine location: $e');
     }
