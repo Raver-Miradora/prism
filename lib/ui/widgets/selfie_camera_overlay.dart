@@ -1,7 +1,6 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import '../../core/theme/civic_horizon_theme.dart';
 
 class SelfieCameraOverlay extends StatefulWidget {
@@ -15,19 +14,6 @@ class _SelfieCameraOverlayState extends State<SelfieCameraOverlay> {
   CameraController? _controller;
   bool _isInitializing = true;
   bool _isCapturing = false;
-  
-  final FaceDetector _faceDetector = FaceDetector(
-    options: FaceDetectorOptions(
-      enableContours: false,
-      enableClassification: false,
-      enableLandmarks: false,
-      enableTracking: false,
-      performanceMode: FaceDetectorMode.fast,
-    ),
-  );
-
-  bool _isProcessing = false;
-  bool _faceDetected = false;
 
   @override
   void initState() {
@@ -51,9 +37,9 @@ class _SelfieCameraOverlayState extends State<SelfieCameraOverlay> {
 
       _controller = CameraController(
         frontCamera,
-        ResolutionPreset.low,
+        ResolutionPreset.medium,
         enableAudio: false,
-        imageFormatGroup: ImageFormatGroup.nv21, // Use nv21 or yuv420 for ML Kit on Android/iOS
+        imageFormatGroup: ImageFormatGroup.jpeg,
       );
 
       await _controller?.initialize();
@@ -61,12 +47,6 @@ class _SelfieCameraOverlayState extends State<SelfieCameraOverlay> {
       if (!mounted) return;
       
       await _controller?.lockCaptureOrientation(DeviceOrientation.portraitUp);
-      
-      _controller?.startImageStream((CameraImage image) {
-        if (_isProcessing) return;
-        _isProcessing = true;
-        _processImage(image);
-      });
       
       setState(() => _isInitializing = false);
     } catch (e) {
@@ -76,67 +56,20 @@ class _SelfieCameraOverlayState extends State<SelfieCameraOverlay> {
     }
   }
 
-  Future<void> _processImage(CameraImage image) async {
-    try {
-      final WriteBuffer allBytes = WriteBuffer();
-      for (final Plane plane in image.planes) {
-        allBytes.putUint8List(plane.bytes);
-      }
-      final bytes = allBytes.done().buffer.asUint8List();
-
-      final Size imageSize = Size(image.width.toDouble(), image.height.toDouble());
-      
-      final camera = _controller!.description;
-      final imageRotation = InputImageRotationValue.fromRawValue(camera.sensorOrientation) ?? InputImageRotation.rotation270deg;
-      final inputImageFormat = InputImageFormatValue.fromRawValue(image.format.raw) ?? InputImageFormat.nv21;
-
-      final inputImageMetadata = InputImageMetadata(
-        size: imageSize,
-        rotation: imageRotation,
-        format: inputImageFormat,
-        bytesPerRow: image.planes[0].bytesPerRow,
-      );
-
-      final inputImage = InputImage.fromBytes(bytes: bytes, metadata: inputImageMetadata);
-      
-      final faces = await _faceDetector.processImage(inputImage);
-      
-      if (mounted) {
-        final hasFace = faces.length == 1;
-        if (_faceDetected != hasFace) {
-          setState(() => _faceDetected = hasFace);
-        }
-      }
-    } catch (e) {
-      // Ignored
-    } finally {
-      if (mounted) {
-        _isProcessing = false;
-      }
-    }
-  }
-
   @override
   void dispose() {
-    if (_controller?.value.isStreamingImages == true) {
-      _controller?.stopImageStream();
-    }
-    _faceDetector.close();
     _controller?.dispose();
     super.dispose();
   }
 
   Future<void> _capture() async {
     final controller = _controller;
-    if (controller == null || !controller.value.isInitialized || _isCapturing || !_faceDetected) return;
+    if (controller == null || !controller.value.isInitialized || _isCapturing) return;
 
     setState(() => _isCapturing = true);
     HapticFeedback.mediumImpact();
 
     try {
-      if (controller.value.isStreamingImages) {
-        await controller.stopImageStream();
-      }
       final XFile photo = await controller.takePicture();
       if (mounted) {
         Navigator.pop(context, photo.path);
@@ -228,36 +161,31 @@ class _SelfieCameraOverlayState extends State<SelfieCameraOverlay> {
                   ),
                 ),
                 const Spacer(),
-                Text(
-                  _faceDetected ? 'Face detected' : 'Align your face within the guide',
-                  style: TextStyle(
-                    color: _faceDetected ? Colors.greenAccent : Colors.white70,
-                    fontSize: 14,
-                    fontWeight: _faceDetected ? FontWeight.bold : FontWeight.normal,
-                  ),
+                const Text(
+                  'Capture your site photo',
+                  style: TextStyle(color: Colors.white70, fontSize: 14),
                 ),
                 const SizedBox(height: 32),
                 
                 // Capture Button
                 GestureDetector(
-                  onTap: _faceDetected ? _capture : null,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
+                  onTap: _capture,
+                  child: Container(
                     height: 80,
                     width: 80,
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(color: _faceDetected ? Colors.white : Colors.white30, width: 4),
+                      border: Border.all(color: Colors.white, width: 4),
                     ),
                     child: Container(
-                      decoration: BoxDecoration(
-                        color: _faceDetected ? Colors.white : Colors.white30,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
                         shape: BoxShape.circle,
                       ),
                       child: _isCapturing
                         ? const Center(child: CircularProgressIndicator(color: CivicHorizonTheme.primary))
-                        : (!_faceDetected ? const Center(child: Icon(Icons.face, color: Colors.black54, size: 36)) : null),
+                        : null,
                     ),
                   ),
                 ),
