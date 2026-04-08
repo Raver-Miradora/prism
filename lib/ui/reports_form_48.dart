@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 
 import '../core/theme/civic_horizon_theme.dart';
 import '../controllers/reports_controller.dart';
-import '../controllers/timeclock_controller.dart';
 import '../controllers/settings_controller.dart';
 import '../core/utils/hourglass_engine.dart';
 import 'widgets/prism_drawer.dart';
@@ -313,48 +312,28 @@ class ReportsForm48 extends ConsumerWidget {
             return _buildTableRow(context, strDate, strDay, sAmArr, sPmDep, lateString, hasError);
           }).toList(),
 
-          // Table Footer Actions
+          // Table Footer — Stats Summary
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: context.colors.surfaceContainerHighest.withAlpha(102),
               borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(16), bottomRight: Radius.circular(16)),
             ),
-            child: Wrap(
-              alignment: WrapAlignment.spaceBetween,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: 16,
-              runSpacing: 16,
+            child: Row(
               children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: context.colors.primary.withAlpha(20),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: context.colors.primary.withAlpha(50)),
-                      ),
-                      child: _buildLedgerStat(context, 'Valid Hours (Rendered)', '${totalValidHours.toStringAsFixed(1)} hrs'),
-                    ),
-                    const SizedBox(width: 24),
-                    _buildLedgerStat(context, 'Total Tardy', '$totalLateMins mins'),
-                    const SizedBox(width: 24),
-                    _buildLedgerStat(context, 'Undertime', '$totalUndertimeMins mins'),
-                  ],
-                ),
-                ElevatedButton.icon(
-                  onPressed: () => _showManualEntryDialog(context, ref),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: context.colors.primary,
-                    foregroundColor: context.colors.onPrimary,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: context.colors.primary.withAlpha(20),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: context.colors.primary.withAlpha(50)),
                   ),
-                  icon: const Icon(Icons.edit_calendar, size: 18),
-                  label: const Text('Log Absence/Leave/Holiday', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                  child: _buildLedgerStat(context, 'Valid Hours (Rendered)', '${totalValidHours.toStringAsFixed(1)} hrs'),
                 ),
+                const SizedBox(width: 24),
+                _buildLedgerStat(context, 'Total Tardy', '$totalLateMins mins'),
+                const SizedBox(width: 24),
+                _buildLedgerStat(context, 'Undertime', '$totalUndertimeMins mins'),
               ],
             ),
           ),
@@ -363,87 +342,6 @@ class ReportsForm48 extends ConsumerWidget {
     );
   }
 
-  void _showManualEntryDialog(BuildContext context, WidgetRef ref) {
-    DateTime selectedDate = DateTime.now();
-    String selectedStatus = 'ABSENT';
-    final remarksController = TextEditingController();
-
-    final statusOptions = {
-      'ABSENT': 'Absent',
-      'EXCUSED': 'Excused / Leave',
-      'HOLIDAY_FULL': 'Holiday (Whole Day)',
-      'HOLIDAY_AM': 'Holiday (AM Only)',
-      'HOLIDAY_PM': 'Holiday (PM Only)',
-    };
-
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text('Log Status Entry', style: TextStyle(fontFamily: 'Public Sans', fontWeight: FontWeight.bold)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text("Date: ${DateFormat('yyyy-MM-dd').format(selectedDate)}"),
-                trailing: const Icon(Icons.calendar_today, size: 20),
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: selectedDate,
-                    firstDate: DateTime(2024),
-                    lastDate: DateTime(2100),
-                  );
-                  if (picked != null) setState(() => selectedDate = picked);
-                },
-              ),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                value: selectedStatus,
-                decoration: const InputDecoration(
-                  labelText: 'Attendance Status',
-                  labelStyle: TextStyle(fontSize: 12),
-                  border: OutlineInputBorder(),
-                ),
-                items: statusOptions.entries.map((e) => DropdownMenuItem(value: e.key, child: Text(e.value, style: const TextStyle(fontSize: 14)))).toList(),
-                onChanged: (val) => setState(() => selectedStatus = val!),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: remarksController,
-                decoration: const InputDecoration(
-                  labelText: 'Remarks / Specific Reason',
-                  labelStyle: TextStyle(fontSize: 12),
-                  hintText: 'e.g. Sick Leave, National Holiday...',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-            ElevatedButton(
-              onPressed: () async {
-                await ref.read(timeclockControllerProvider.notifier).logAttendanceStatus(
-                  selectedDate,
-                  selectedStatus,
-                  remarksController.text,
-                );
-                // Refresh list
-                ref.read(reportsControllerProvider.notifier).loadData(
-                  ref.read(reportsControllerProvider).selectedYear,
-                  ref.read(reportsControllerProvider).selectedMonth,
-                );
-                if (context.mounted) Navigator.pop(ctx);
-              },
-              child: const Text('Save Entry'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildTableRowHeader(BuildContext context) {
     return Padding(
