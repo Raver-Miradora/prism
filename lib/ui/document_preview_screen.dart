@@ -128,8 +128,9 @@ class _DocumentPreviewScreenState extends ConsumerState<DocumentPreviewScreen> {
                   try {
                     await widget.onApprove(context, widget.initialContent != null ? _controller.text : null);
                   } finally {
-                    if (mounted) {
+                      if (mounted) {
                       setState(() => _isGenerating = false);
+                      // ignore: use_build_context_synchronously
                       Navigator.pop(context);
                     }
                   }
