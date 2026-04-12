@@ -30,13 +30,13 @@ class CivicHorizonTheme {
 
   /// Helper for "Ghost Border"
   static Border ghostBorder(BuildContext context) => Border.all(
-        color: context.colors.outlineVariant.withOpacity(0.15),
+        color: context.colors.outlineVariant.withValues(alpha: 0.15),
         width: 1.0,
       );
 
   static Border ghostBorderBottom(BuildContext context) => Border(
         bottom: BorderSide(
-          color: context.colors.outlineVariant.withOpacity(0.15),
+          color: context.colors.outlineVariant.withValues(alpha: 0.15),
           width: 2.0,
         ),
       );
@@ -44,7 +44,7 @@ class CivicHorizonTheme {
   /// Helper for "Ambient Glow" (floating elements without harsh shadows)
   static List<BoxShadow> ambientGlow(BuildContext context) => [
         BoxShadow(
-          color: context.colors.onSurface.withOpacity(0.06),
+          color: context.colors.onSurface.withValues(alpha: 0.06),
           blurRadius: 30,
           spreadRadius: 0,
           offset: const Offset(0, 4),
