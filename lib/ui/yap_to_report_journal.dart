@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -8,7 +7,8 @@ import '../core/theme/civic_horizon_theme.dart';
 import '../controllers/yap_journal_controller.dart';
 import '../controllers/settings_controller.dart';
 import '../data/repositories/daily_report_repository.dart';
-import '../services/pdf_service.dart';
+
+import '../services/report_generator_service.dart';
 import '../services/app_feedback.dart';
 import 'widgets/prism_drawer.dart';
 import 'widgets/profile_avatar.dart';
@@ -489,14 +489,49 @@ class _YapToReportJournalState extends ConsumerState<YapToReportJournal> {
                   final settings = settingsState.settings;
                   if (profile == null || settings == null) return;
 
-                  await PdfService.generateAndPrintAccomplishmentReport(
-                    reports,
-                    profile,
-                    settings,
-                    range.start,
-                    range.end,
-                    customSummaryBullets: finalSummary,
-                  );
+                  try {
+                    final results = await ReportGeneratorService.generateDualReport(
+                      reports: reports,
+                      profile: profile,
+                      settings: settings,
+                      start: range.start,
+                      end: range.end,
+                      customSummaryBullets: finalSummary,
+                    );
+
+                    if (docCtx.mounted) {
+                      showDialog(
+                        context: docCtx,
+                        builder: (sCtx) => AlertDialog(
+                          title: const Text('REPORTS GENERATED'),
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Professional reports have been saved to your Documents directory:', style: TextStyle(fontSize: 12)),
+                              const SizedBox(height: 16),
+                              Text('PDF: ${results['pdf']}', style: const TextStyle(fontSize: 10, color: Colors.blue)),
+                              const SizedBox(height: 8),
+                              Text('WORD: ${results['docx']}', style: const TextStyle(fontSize: 10, color: Colors.blue)),
+                            ],
+                          ),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(sCtx), child: const Text('OK')),
+                          ],
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (docCtx.mounted) AppFeedback.showError(docCtx, 'Generation failed: $e');
+                  }
+
+
+
+
+
+
+
+
               }
             )
           ));
