@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/civic_horizon_theme.dart';
 import '../../../controllers/onboarding_controller.dart';
 import 'widgets/onboarding_pages.dart';
+import '../main_shell.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -151,7 +152,25 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       onPressed: isNextDisabled 
                         ? null 
                         : (isLastPage 
-                          ? () => ref.read(onboardingProvider.notifier).completeOnboarding()
+                          ? () async {
+                              try {
+                                await ref.read(onboardingProvider.notifier).completeOnboarding();
+                                if (mounted) {
+                                  // ignore: use_build_context_synchronously
+                                  Navigator.of(context).pushAndRemoveUntil(
+                                    MaterialPageRoute(builder: (_) => const MainShell()),
+                                    (route) => false,
+                                  );
+                                }
+                              } catch (e) {
+                                if (mounted) {
+                                  // ignore: use_build_context_synchronously
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Error completing onboarding: $e'), backgroundColor: Colors.red),
+                                  );
+                                }
+                              }
+                            }
                           : _nextPage),
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 20),
