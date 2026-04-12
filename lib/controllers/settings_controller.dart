@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../data/models/intern_profile.dart';
@@ -62,54 +63,67 @@ class SettingsController extends StateNotifier<SettingsState> {
     required String courseProgram,
   }) async {
     state = state.copyWith(isLoading: true);
-    final updatedProfile = InternProfile(
-      name: name,
-      agencyOffice: agency,
-      supervisorName: supervisor,
-      profileImagePath: state.profile?.profileImagePath,
-    );
-    await _profileRepo.saveProfile(updatedProfile);
+    try {
+      final updatedProfile = InternProfile(
+        name: name,
+        agencyOffice: agency,
+        supervisorName: supervisor,
+        profileImagePath: state.profile?.profileImagePath,
+      );
+      await _profileRepo.saveProfile(updatedProfile);
 
-    final db = await DatabaseHelper.instance.database;
-    final updatedSettings = state.settings?.copyWith(
-      targetHours: targetHours,
-      expectedTimeIn: timeIn,
-      schoolName: schoolName,
-      courseProgram: courseProgram,
-    ) ?? InternSettings(
-      id: 1,
-      targetHours: targetHours,
-      expectedTimeIn: timeIn,
-      expectedTimeOut: '17:00',
-      lunchBreakMins: 60,
-      schoolName: schoolName,
-      courseProgram: courseProgram,
-    );
-    
-    await db.update(
-      'intern_settings',
-      updatedSettings.toMap(),
-      where: 'id = ?',
-      whereArgs: [1],
-    );
+      final db = await DatabaseHelper.instance.database;
+      final updatedSettings = state.settings?.copyWith(
+        targetHours: targetHours,
+        expectedTimeIn: timeIn,
+        schoolName: schoolName,
+        courseProgram: courseProgram,
+      ) ?? InternSettings(
+        id: 1,
+        targetHours: targetHours,
+        expectedTimeIn: timeIn,
+        expectedTimeOut: '17:00',
+        lunchBreakMins: 60,
+        schoolName: schoolName,
+        courseProgram: courseProgram,
+      );
+      
+      await db.update(
+        'intern_settings',
+        updatedSettings.toMap(),
+        where: 'id = ?',
+        whereArgs: [1],
+      );
 
-    state = SettingsState(profile: updatedProfile, settings: updatedSettings, isLoading: false);
+      state = SettingsState(profile: updatedProfile, settings: updatedSettings, isLoading: false);
+    } catch (e) {
+      // Log for debugging but ensure UI becomes interactive again
+      debugPrint('SettingsController: saveSettings Error: $e');
+    } finally {
+      if (mounted) state = state.copyWith(isLoading: false);
+    }
   }
 
   Future<void> updateBaseLocation(double lat, double lng) async {
     if (state.settings == null) return;
     
     state = state.copyWith(isLoading: true);
-    final updatedSettings = state.settings!.copyWith(officeLat: lat, officeLng: lng);
-    final db = await DatabaseHelper.instance.database;
-    await db.update(
-      'intern_settings',
-      updatedSettings.toMap(),
-      where: 'id = ?',
-      whereArgs: [1],
-    );
-    
-    state = SettingsState(profile: state.profile, settings: updatedSettings, isLoading: false);
+    try {
+      final updatedSettings = state.settings!.copyWith(officeLat: lat, officeLng: lng);
+      final db = await DatabaseHelper.instance.database;
+      await db.update(
+        'intern_settings',
+        updatedSettings.toMap(),
+        where: 'id = ?',
+        whereArgs: [1],
+      );
+      
+      state = SettingsState(profile: state.profile, settings: updatedSettings, isLoading: false);
+    } catch (e) {
+      debugPrint('SettingsController: updateBaseLocation Error: $e');
+    } finally {
+      if (mounted) state = state.copyWith(isLoading: false);
+    }
   }
 }
 
