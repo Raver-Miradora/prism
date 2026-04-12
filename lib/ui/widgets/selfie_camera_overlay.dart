@@ -107,7 +107,7 @@ class _SelfieCameraOverlayState extends State<SelfieCameraOverlay> {
           // 2. Face Guide Overlay
           ColorFiltered(
             colorFilter: ColorFilter.mode(
-              Colors.black.withOpacity(0.7),
+              Colors.black.withValues(alpha: 0.7),
               BlendMode.srcOut,
             ),
             child: Stack(
@@ -124,9 +124,9 @@ class _SelfieCameraOverlayState extends State<SelfieCameraOverlay> {
                     margin: const EdgeInsets.only(bottom: 100),
                     height: 380,
                     width: 280,
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       color: Colors.red,
-                      borderRadius: const BorderRadius.all(Radius.elliptical(140, 190)),
+                      borderRadius: BorderRadius.all(Radius.elliptical(140, 190)),
                     ),
                   ),
                 ),
