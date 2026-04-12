@@ -71,7 +71,7 @@ class MainShell extends ConsumerWidget {
   Widget _buildNavItem(int index, IconData icon, String label, int currentIndex, WidgetRef ref) {
     final isActive = index == currentIndex;
     final color = isActive ? CivicHorizonTheme.primary : const Color(0xFF94A3B8);
-    final bgColor = isActive ? CivicHorizonTheme.primary.withOpacity(0.1) : Colors.transparent;
+    final bgColor = isActive ? CivicHorizonTheme.primary.withValues(alpha: 0.1) : Colors.transparent;
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
