@@ -34,7 +34,7 @@ class ThemeController extends StateNotifier<ThemeState> {
 
   Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
-    final colorValue = prefs.getInt(_seedColorKey) ?? defaultSeed.value;
+    final colorValue = prefs.getInt(_seedColorKey) ?? defaultSeed.toARGB32();
     
     state = ThemeState(
       seedColor: Color(colorValue),
