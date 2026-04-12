@@ -199,7 +199,9 @@ class DatabaseHelper {
         lunch_break_mins INTEGER NOT NULL,
         office_lat REAL,
         office_lng REAL,
-        program_type TEXT NOT NULL DEFAULT "OJT"
+        program_type TEXT NOT NULL DEFAULT "OJT",
+        school_name TEXT,
+        course_program TEXT
       )
     ''');
 
@@ -211,6 +213,8 @@ class DatabaseHelper {
       'expected_time_out': '17:00',
       'lunch_break_mins': 60,
       'program_type': 'OJT',
+      'school_name': '',
+      'course_program': '',
     });
     
     // Insert Default Profile Setup
