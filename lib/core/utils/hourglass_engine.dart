@@ -58,4 +58,31 @@ class HourglassEngine {
     }
     return 0;
   }
+
+  /// Calculates the officially rendered hours according to government DTR rules.
+  /// Standard shift is assumed to be 8 hours. Excess minutes (overtime) are ignored.
+  /// Late arrivals and early departures are considered undertime and deducted.
+  static double calculateDtrRenderedHours(TimeLog log, InternSettings settings) {
+    if (log.amArrivalTime == null || log.pmDepartureTime == null) return 0.0;
+    
+    // 1. Calculate Late Arrival (Tardiness)
+    int lateMinutes = calculateLateDeductions(log, settings.expectedTimeIn);
+    
+    // 2. Calculate Early Departure
+    int earlyMinutes = 0;
+    try {
+      final timeOut = DateTime.parse(log.pmDepartureTime!);
+      final expectedOut = DateFormat('HH:mm').parse(settings.expectedTimeOut);
+      final expectedOutDT = DateTime(timeOut.year, timeOut.month, timeOut.day, expectedOut.hour, expectedOut.minute);
+      final diffOut = expectedOutDT.difference(timeOut);
+      if (diffOut.inMinutes > 0) earlyMinutes = diffOut.inMinutes;
+    } catch (_) {}
+    
+    // 3. Deduct total undertime from the standard 8.0 hours
+    int totalUndertime = lateMinutes + earlyMinutes;
+    double expectedShiftHours = 8.0;
+    
+    double renderedHours = expectedShiftHours - (totalUndertime / 60.0);
+    return renderedHours < 0.0 ? 0.0 : double.parse(renderedHours.toStringAsFixed(2));
+  }
 }
