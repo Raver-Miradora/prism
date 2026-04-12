@@ -82,21 +82,38 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
     super.dispose();
   }
 
-  void _commitChanges() {
+  void _commitChanges() async {
     FocusScope.of(context).unfocus();
-    ref.read(settingsProvider.notifier).saveSettings(
-      name: _nameController.text,
-      agency: _agencyController.text,
-      supervisor: _supervisorController.text,
-      targetHours: int.tryParse(_hoursController.text) ?? 486,
-      timeIn: _timeInController.text,
-      schoolName: _schoolController.text,
-      courseProgram: _courseController.text,
-    );
-    setState(() => _isDirty = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: const Text('Settings successfully saved to registry.'), backgroundColor: context.colors.primary),
-    );
+    try {
+      await ref.read(settingsProvider.notifier).saveSettings(
+        name: _nameController.text,
+        agency: _agencyController.text,
+        supervisor: _supervisorController.text,
+        targetHours: int.tryParse(_hoursController.text) ?? 486,
+        timeIn: _timeInController.text,
+        schoolName: _schoolController.text,
+        courseProgram: _courseController.text,
+      );
+      
+      if (mounted) {
+        setState(() => _isDirty = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Settings successfully saved to registry.'), 
+            backgroundColor: context.colors.primary
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Save failed: $e'), 
+            backgroundColor: Colors.red
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _backupDatabase() async {
@@ -174,6 +191,7 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
         final pos = await loc.getCurrentPosition();
         if (!mounted) return;
         await ref.read(settingsProvider.notifier).updateBaseLocation(pos.latitude, pos.longitude);
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Base Location successfully locked.'), backgroundColor: Colors.green));
       } catch (e) {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('GPS Error: $e'), backgroundColor: Colors.red));
@@ -196,6 +214,7 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
           if (didPop) return;
           final shouldPop = await _showDiscardDialog();
           if (shouldPop && mounted) {
+            // ignore: use_build_context_synchronously
             Navigator.of(context).pop();
           }
         },
@@ -474,7 +493,7 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
               separatorBuilder: (context, index) => const SizedBox(width: 16),
               itemBuilder: (context, index) {
                 final color = seedColors[index];
-                final isSelected = themeState.seedColor.value == color.value;
+                final isSelected = themeState.seedColor.toARGB32() == color.toARGB32();
 
                 return GestureDetector(
                   onTap: () => themeNotifier.setSeedColor(color),
