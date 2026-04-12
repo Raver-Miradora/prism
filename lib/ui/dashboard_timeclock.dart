@@ -341,7 +341,7 @@ class DashboardTimeclock extends ConsumerWidget {
                       notifier.toggleFieldworkMode(false);
                     }
                   },
-                  activeColor: context.colors.tertiary,
+                  activeThumbColor: context.colors.tertiary,
                 ),
               ],
             ),
@@ -421,7 +421,7 @@ class DashboardTimeclock extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
-                value: selectedStatus,
+                initialValue: selectedStatus,
                 decoration: const InputDecoration(
                   labelText: 'Attendance Status',
                   labelStyle: TextStyle(fontSize: 12),
@@ -495,7 +495,7 @@ class DashboardTimeclock extends ConsumerWidget {
                   fontSize: 12,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 2.0,
-                  color: context.colors.onPrimary.withOpacity(0.7),
+                  color: context.colors.onPrimary.withValues(alpha: 0.7),
                 ),
               ),
               const SizedBox(height: 16),
@@ -518,7 +518,7 @@ class DashboardTimeclock extends ConsumerWidget {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
-                      color: context.colors.onPrimary.withOpacity(0.7),
+                      color: context.colors.onPrimary.withValues(alpha: 0.7),
                     ),
                   ),
                 ],
@@ -530,7 +530,7 @@ class DashboardTimeclock extends ConsumerWidget {
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.0,
-                  color: context.colors.onPrimary.withOpacity(0.7),
+                  color: context.colors.onPrimary.withValues(alpha: 0.7),
                 ),
               ),
             ],
@@ -544,7 +544,7 @@ class DashboardTimeclock extends ConsumerWidget {
                 child: CircularProgressIndicator(
                   value: state.accumulatedHours / state.targetHours,
                   strokeWidth: 8,
-                  backgroundColor: context.colors.onPrimary.withOpacity(0.1),
+                  backgroundColor: context.colors.onPrimary.withValues(alpha: 0.1),
                   color: context.colors.tertiary,
                 ),
               ),
