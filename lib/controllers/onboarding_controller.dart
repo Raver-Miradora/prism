@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/models/intern_profile.dart';
 import '../data/models/intern_settings.dart';
@@ -24,7 +25,7 @@ class OnboardingState {
 
   OnboardingState({
     this.name = '',
-    this.office = 'LGU HRMO',
+    this.office = '',
     this.customOffice,
     this.supervisorName = '',
     this.programType = 'OJT',
@@ -138,12 +139,16 @@ class OnboardingController extends StateNotifier<OnboardingState> {
       courseProgram: state.courseProgram,
     );
     
-    await db.update(
-      'intern_settings',
-      settings.toMap(),
-      where: 'id = ?',
-      whereArgs: [1],
-    );
+    try {
+      await db.update(
+        'intern_settings',
+        settings.toMap(),
+        where: 'id = ?',
+        whereArgs: [1],
+      );
+    } catch (e) {
+      debugPrint('OnboardingController: Database update failed: $e');
+    }
 
     // 3. Refresh the global settings provider
     await _ref.read(settingsProvider.notifier).loadSettings();
