@@ -45,6 +45,30 @@ class PdfService {
     DateTime end,
     {String? customSummaryBullets}
   ) async {
+    final pdfBytes = await buildAccomplishmentReportBytes(
+      reports,
+      profile,
+      settings,
+      start,
+      end,
+      customSummaryBullets: customSummaryBullets,
+    );
+
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => pdfBytes,
+      name: 'Accomplishment_Report_${profile.name.replaceAll(" ", "_")}',
+    );
+  }
+
+  /// Builds the bytes for the Accomplishment Report PDF (Twin Generation logic)
+  static Future<Uint8List> buildAccomplishmentReportBytes(
+    List<DailyReport> reports,
+    InternProfile profile,
+    InternSettings settings,
+    DateTime start,
+    DateTime end,
+    {String? customSummaryBullets}
+  ) async {
     final pdf = pw.Document();
     
     // Filter reports that have notes
@@ -242,10 +266,7 @@ class PdfService {
       ),
     );
 
-    await Printing.layoutPdf(
-      onLayout: (PdfPageFormat format) async => pdf.save(),
-      name: 'Accomplishment_Report_${profile.name.replaceAll(" ", "_")}',
-    );
+    return pdf.save();
   }
 
   // ─────────────────────────────────────────────────────────────────
@@ -327,7 +348,7 @@ class PdfService {
     int year,
     int month,
   ) {
-    final normal = const pw.TextStyle(fontSize: 7);
+    const normal = pw.TextStyle(fontSize: 7);
     final bold = pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 7);
     final titleBold = pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11);
 
@@ -501,7 +522,7 @@ class PdfService {
     int totalUndertimeMins = 0;
 
     final hBold = pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 6);
-    final cellStyle = const pw.TextStyle(fontSize: 6);
+    const cellStyle = pw.TextStyle(fontSize: 6);
     final statusStyle = pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 6, color: PdfColors.grey700);
     final weekendStyle = pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 6, color: PdfColors.grey500);
 
@@ -512,26 +533,61 @@ class PdfService {
       );
     }
 
-    final rows = <pw.TableRow>[];
+    /// Helper to draw a row with given flexes and manual borders.
+    pw.Widget drawRow(List<pw.Widget> children, List<int> flexes, {
+      PdfColor? bgColor, bool isTopBorder = false,
+    }) {
+      final cells = <pw.Widget>[];
+      for (int i = 0; i < children.length; i++) {
+        cells.add(
+          pw.Expanded(
+            flex: flexes[i],
+            child: pw.Container(
+              decoration: pw.BoxDecoration(
+                border: pw.Border(
+                  right: (i < children.length - 1) ? const pw.BorderSide(width: 0.5) : pw.BorderSide.none,
+                ),
+              ),
+              child: children[i],
+            ),
+          )
+        );
+      }
+      return pw.Container(
+        decoration: pw.BoxDecoration(
+          color: bgColor,
+          border: pw.Border(
+            top: isTopBorder ? const pw.BorderSide(width: 0.5) : pw.BorderSide.none,
+            bottom: const pw.BorderSide(width: 0.5),
+            left: const pw.BorderSide(width: 0.5),
+            right: const pw.BorderSide(width: 0.5),
+          )
+        ),
+        child: pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+          children: cells,
+        ),
+      );
+    }
+
+    final rows = <pw.Widget>[];
 
     // ── Header row 1: group labels (CSC Form 48 exact) ─────────────────────
-    rows.add(pw.TableRow(
-      decoration: const pw.BoxDecoration(color: PdfColors.grey200),
-      children: [
+    rows.add(drawRow(
+      [
         cell('Day', style: hBold),
         cell('A.M.', style: hBold),
-        cell('A.M.', style: hBold),
         cell('P.M.', style: hBold),
-        cell('P.M.', style: hBold),
-        cell('Undertime', style: hBold),
         cell('Undertime', style: hBold),
       ],
+      [12, 40, 40, 24],
+      bgColor: PdfColors.grey200,
+      isTopBorder: true,
     ));
 
     // ── Header row 2: sub-labels (Arrival / Departure) ───────────────────
-    rows.add(pw.TableRow(
-      decoration: const pw.BoxDecoration(color: PdfColors.grey100),
-      children: [
+    rows.add(drawRow(
+      [
         cell('', style: hBold),
         cell('Arrival', style: hBold),
         cell('Departure', style: hBold),
@@ -540,6 +596,8 @@ class PdfService {
         cell('Hours', style: hBold),
         cell('Minutes', style: hBold),
       ],
+      [12, 20, 20, 20, 20, 12, 12],
+      bgColor: PdfColors.grey100,
     ));
 
     for (int day = 1; day <= daysInMonth; day++) {
@@ -550,23 +608,21 @@ class PdfService {
       // ── Weekend rows: print day name centered across all time cols ──────────
       if (isWeekend) {
         final label = date.weekday == DateTime.saturday ? 'SATURDAY' : 'SUNDAY';
-        rows.add(pw.TableRow(children: [
+        rows.add(drawRow([
           cell('$day'),
-          pw.Padding(
-            padding: const pw.EdgeInsets.symmetric(vertical: 1.5, horizontal: 1),
-            child: pw.Center(child: pw.Text(label, style: weekendStyle, textAlign: pw.TextAlign.center)),
-          ),
-          cell(''), cell(''), cell(''), cell(''), cell(''),
-        ]));
+          cell(label, style: weekendStyle), // spanned 80 flex block
+          cell(''),
+          cell(''),
+        ], [12, 80, 12, 12]));
         continue;
       }
 
       if (log == null) {
         // Empty weekday row — blank boxes
-        rows.add(pw.TableRow(children: [
+        rows.add(drawRow([
           cell('$day'),
           cell(''), cell(''), cell(''), cell(''), cell(''), cell(''),
-        ]));
+        ], [12, 20, 20, 20, 20, 12, 12]));
         continue;
       }
 
@@ -580,14 +636,12 @@ class PdfService {
         if (label == 'HOLIDAY_PM')   label = 'HOLIDAY (PM)';
         if (label == 'EXCUSED')      label = 'LEAVE';
 
-        rows.add(pw.TableRow(children: [
+        rows.add(drawRow([
           cell('$day'),
-          pw.Padding(
-            padding: const pw.EdgeInsets.symmetric(vertical: 1.5, horizontal: 1),
-            child: pw.Center(child: pw.Text(label, style: statusStyle, textAlign: pw.TextAlign.center)),
-          ),
-          cell(''), cell(''), cell(''), cell(''), cell(''),
-        ]));
+          cell(label, style: statusStyle), // spanned 80 flex block
+          cell(''),
+          cell(''),
+        ], [12, 80, 12, 12]));
         continue;
       }
 
@@ -617,7 +671,7 @@ class PdfService {
         utMins = '$m';
       }
 
-      rows.add(pw.TableRow(children: [
+      rows.add(drawRow([
         cell('$day'),
         cell(slots.amIn),
         cell(slots.amOut),
@@ -625,43 +679,26 @@ class PdfService {
         cell(slots.pmOut),
         cell(utHrs),
         cell(utMins),
-      ]));
+      ], [12, 20, 20, 20, 20, 12, 12]));
     }
 
     // ── TOTAL row ────────────────────────────────────────────────────
     totalUndertimeHours += totalUndertimeMins ~/ 60;
     totalUndertimeMins = totalUndertimeMins % 60;
 
-    rows.add(pw.TableRow(
-      decoration: const pw.BoxDecoration(border: pw.Border(top: pw.BorderSide(width: 1))),
-      children: [
-        cell('TOTAL', style: hBold),
-        cell(''), cell(''), cell(''), cell(''),
-        cell('$totalUndertimeHours', style: hBold),
-        cell('$totalUndertimeMins', style: hBold),
-      ],
-    ));
+    rows.add(drawRow([
+      cell('TOTAL', style: hBold),
+      cell('$totalUndertimeHours', style: hBold),
+      cell('$totalUndertimeMins', style: hBold),
+    ], [92, 12, 12]));
 
-    // Column widths matching CSC Form 48 proportions
-    return pw.Table(
-      border: pw.TableBorder.all(width: 0.5),
-      columnWidths: const {
-        0: pw.FlexColumnWidth(1.2),  // Day
-        1: pw.FlexColumnWidth(2.0),  // AM Arrival
-        2: pw.FlexColumnWidth(2.0),  // AM Departure
-        3: pw.FlexColumnWidth(2.0),  // PM Arrival
-        4: pw.FlexColumnWidth(2.0),  // PM Departure
-        5: pw.FlexColumnWidth(1.2),  // UT Hours
-        6: pw.FlexColumnWidth(1.2),  // UT Minutes
-      },
-      children: rows,
-    );
+    return pw.Column(children: rows);
   }
 
   static pw.Widget _buildFieldworkAnnex(List<TimeLog> fieldworkLogs, InternProfile profile, String monthName) {
     final titleStyle = pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold);
     final headerStyle = pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold);
-    final bodyStyle = const pw.TextStyle(fontSize: 9);
+    const bodyStyle = pw.TextStyle(fontSize: 9);
 
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -707,7 +744,7 @@ class PdfService {
         pw.Text(
           'NOTE: Entries marked with an asterisk (*) in the Form 48 are authorized off-site fieldwork logs. '
           'The intern was at the locations specified above during those registry events.',
-          style: pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
+          style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
         ),
         
         pw.Spacer(),
