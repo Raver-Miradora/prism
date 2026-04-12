@@ -64,11 +64,11 @@ class _ClockInWidgetState extends State<ClockInWidget> {
         padding: const EdgeInsets.all(32),
         decoration: BoxDecoration(
           color: widget.onPressed == null 
-              ? context.colors.surfaceContainerLow.withOpacity(0.5)
+              ? context.colors.surfaceContainerLow.withValues(alpha: 0.5)
               : context.colors.surfaceContainerLowest,
           borderRadius: BorderRadius.circular(12),
           border: widget.onPressed == null
-              ? Border.all(color: context.colors.outline.withOpacity(0.2))
+              ? Border.all(color: context.colors.outline.withValues(alpha: 0.2))
               : CivicHorizonTheme.ghostBorder(context),
           boxShadow: widget.onPressed == null ? [] : CivicHorizonTheme.ambientGlow(context),
         ),
