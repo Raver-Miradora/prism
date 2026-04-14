@@ -74,7 +74,7 @@ class PdfService {
     // Filter reports that have notes
     final activeReports = reports
         .where((r) => r.rawNotes.isNotEmpty)
-        .toList();
+        .toList(growable: true);
 
     // Collect all bullets from all notes
     final List<String> allBullets = [];
@@ -83,14 +83,14 @@ class PdfService {
           .split('\n')
           .map((l) => l.trim())
           .where((l) => l.isNotEmpty)
-          .toList();
+          .toList(growable: true);
       allBullets.addAll(lines);
     }
 
     final List<String> summaryBullets = [];
     if (customSummaryBullets != null && customSummaryBullets.isNotEmpty) {
       summaryBullets.addAll(
-        customSummaryBullets.split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty)
+        customSummaryBullets.split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(growable: true)
       );
     } else if (allBullets.isNotEmpty) {
       if (allBullets.length <= 5) {
@@ -181,7 +181,7 @@ class PdfService {
                               children: summaryBullets.map((b) {
                                 final cleanText = b.replaceFirst('\u2022', '').trim();
                                 return _bulletCell(cleanText);
-                              }).toList(),
+                              }).toList(growable: true),
                             ),
                     ),
                   ],
@@ -325,7 +325,7 @@ class PdfService {
     );
 
     // Filter fieldwork logs for the Annex
-    final fieldworkLogs = logs.where((l) => l.isFieldwork).toList();
+    final fieldworkLogs = logs.where((l) => l.isFieldwork).toList(growable: true);
     if (fieldworkLogs.isNotEmpty) {
       pdf.addPage(
         pw.Page(
@@ -564,7 +564,6 @@ class PdfService {
           )
         ),
         child: pw.Row(
-          crossAxisAlignment: pw.CrossAxisAlignment.stretch,
           children: cells,
         ),
       );

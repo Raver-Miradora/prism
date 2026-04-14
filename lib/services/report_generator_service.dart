@@ -95,7 +95,7 @@ class ReportGeneratorService {
         c.add(TextContent('PERIOD', periodStr));
         c.add(TextContent('WORKS', bullet.replaceFirst('•', '').trim()));
         return c;
-      }),
+      }).toList(growable: true),
       growable: true,
     );
 
@@ -153,11 +153,13 @@ class ReportGeneratorService {
     }
 
     final List<String> allBullets = <String>[];
-    for (final r in reports.where((r) => r.rawNotes.isNotEmpty)) {
+    final activeReports = reports.where((r) => r.rawNotes.isNotEmpty).toList(growable: true);
+    for (final r in activeReports) {
       final lines = r.rawNotes
           .split('\n')
           .map((l) => l.trim())
-          .where((l) => l.isNotEmpty);
+          .where((l) => l.isNotEmpty)
+          .toList(growable: true);
       allBullets.addAll(lines);
     }
 
