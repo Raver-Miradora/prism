@@ -12,8 +12,6 @@ import '../services/report_generator_service.dart';
 import '../services/app_feedback.dart';
 import 'widgets/prism_drawer.dart';
 import 'widgets/profile_avatar.dart';
-import 'document_preview_screen.dart';
-
 class YapToReportJournal extends ConsumerStatefulWidget {
   const YapToReportJournal({super.key});
 
@@ -476,63 +474,64 @@ class _YapToReportJournalState extends ConsumerState<YapToReportJournal> {
              AppFeedback.showError(context, "No completed entries found for selected range.");
              return;
           }
-          
-          Navigator.push(context, MaterialPageRoute(
-            builder: (ctx) => DocumentPreviewScreen(
-              title: 'Accomplishment Report Preview',
-              initialContent: summary,
-              onApprove: (docCtx, finalSummary) async {
-                  final repo = DailyReportRepository();
-                  final reports = await repo.getReportsForRange(range.start, range.end);
-                  final settingsState = ref.read(settingsProvider);
-                  final profile = settingsState.profile;
-                  final settings = settingsState.settings;
-                  if (profile == null || settings == null) return;
+          // Show loading dialog
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (ctx) => const Center(child: CircularProgressIndicator()),
+          );
 
-                  try {
-                    final reportPath = await ReportGeneratorService.generateReport(
-                      reports: reports,
-                      profile: profile,
-                      settings: settings,
-                      start: range.start,
-                      end: range.end,
-                      customSummaryBullets: finalSummary,
-                    );
+          try {
+            final repo = DailyReportRepository();
+            final reports = await repo.getReportsForRange(range.start, range.end);
+            final settingsState = ref.read(settingsProvider);
+            final profile = settingsState.profile;
+            final settings = settingsState.settings;
 
-                    if (docCtx.mounted) {
-                      showDialog(
-                        context: docCtx,
-                        builder: (sCtx) => AlertDialog(
-                          title: const Text('REPORT GENERATED'),
-                          content: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Professional report has been saved to your Documents directory:', style: TextStyle(fontSize: 12)),
-                              const SizedBox(height: 16),
-                              Text('PDF: $reportPath', style: const TextStyle(fontSize: 10, color: Colors.blue)),
-                            ],
-                          ),
-                          actions: [
-                            TextButton(onPressed: () => Navigator.pop(sCtx), child: const Text('OK')),
-                          ],
-                        ),
-                      );
-                    }
-                  } catch (e) {
-                    if (docCtx.mounted) AppFeedback.showError(docCtx, 'Generation failed: $e');
-                  }
-
-
-
-
-
-
-
-
+            if (profile == null || settings == null) {
+              if (context.mounted) {
+                Navigator.pop(context); // pop loading
+                AppFeedback.showError(context, "Profile or settings missing.");
               }
-            )
-          ));
+              return;
+            }
+
+            final reportPath = await ReportGeneratorService.generateReport(
+              reports: reports,
+              profile: profile,
+              settings: settings,
+              start: range.start,
+              end: range.end,
+              customSummaryBullets: summary, // Use raw un-previewed summary
+            );
+
+            if (context.mounted) {
+              Navigator.pop(context); // pop loading
+              showDialog(
+                context: context,
+                builder: (sCtx) => AlertDialog(
+                  title: const Text('REPORT GENERATED'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Professional report has been saved to your Documents directory:', style: TextStyle(fontSize: 12)),
+                      const SizedBox(height: 16),
+                      Text('PDF: $reportPath', style: const TextStyle(fontSize: 10, color: Colors.blue)),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(sCtx), child: const Text('OK')),
+                  ],
+                ),
+              );
+            }
+          } catch (e) {
+            if (context.mounted) {
+              Navigator.pop(context); // pop loading
+              AppFeedback.showError(context, 'Generation failed: $e');
+            }
+          }
         },
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),

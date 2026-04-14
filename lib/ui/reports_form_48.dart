@@ -4,12 +4,9 @@ import 'package:intl/intl.dart';
 
 import '../core/theme/civic_horizon_theme.dart';
 import '../controllers/reports_controller.dart';
-import '../controllers/settings_controller.dart';
 import '../core/utils/hourglass_engine.dart';
 import 'widgets/prism_drawer.dart';
 import 'widgets/profile_avatar.dart';
-import 'widgets/dtr_preview_table.dart';
-import 'document_preview_screen.dart';
 
 class ReportsForm48 extends ConsumerWidget {
   const ReportsForm48({super.key});
@@ -166,25 +163,20 @@ class ReportsForm48 extends ConsumerWidget {
     bool isLoading = state.isGeneratingPdf || state.logsStatus.isLoading;
 
     return GestureDetector(
-      onTap: isLoading ? null : () {
-        final settings = ref.read(settingsProvider).settings;
-        if (settings == null) return;
-
-        Navigator.push(context, MaterialPageRoute(
-          builder: (ctx) => DocumentPreviewScreen(
-            title: 'DTR Form 48 Assembly',
-            initialContent: null,
-            previewWidget: DtrPreviewTable(
-              logs: state.logsStatus.valueOrNull ?? [],
-              settings: settings,
-              year: state.selectedYear,
-              month: state.selectedMonth,
-            ),
-            onApprove: (docCtx, _) async {
-               await notifier.generatePDF();
-            }
-          )
-        ));
+      onTap: isLoading ? null : () async {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => const Center(child: CircularProgressIndicator()),
+        );
+        try {
+          await notifier.generatePDF();
+          if (context.mounted) Navigator.pop(context); // pop loading
+        } catch (e) {
+          if (context.mounted) {
+            Navigator.pop(context);
+          }
+        }
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),

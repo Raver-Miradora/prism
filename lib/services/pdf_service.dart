@@ -375,7 +375,7 @@ class PdfService {
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
               pw.RichText(text: pw.TextSpan(children: [
-                pw.TextSpan(text: 'For the month of  ', style: normal),
+                const pw.TextSpan(text: 'For the month of  ', style: normal),
                 pw.TextSpan(text: monthName, style: bold),
               ])),
             ],
@@ -525,57 +525,32 @@ class PdfService {
     final hBold = pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 6);
     const cellStyle = pw.TextStyle(fontSize: 6);
     final statusStyle = pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 6, color: PdfColors.grey700);
-    final weekendStyle = pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 6, color: PdfColors.grey500);
 
     pw.Widget cell(String text, {pw.TextStyle? style}) {
       return pw.Padding(
-        padding: const pw.EdgeInsets.symmetric(vertical: 1.5, horizontal: 1),
+        padding: const pw.EdgeInsets.symmetric(vertical: 2.0, horizontal: 1),
         child: pw.Center(child: pw.Text(text, style: style ?? cellStyle, textAlign: pw.TextAlign.center)),
       );
     }
 
-    /// Helper to draw a row with given flexes and manual borders.
-    pw.Widget drawRow(List<pw.Widget> children, List<int> flexes, {
-      PdfColor? bgColor, bool isTopBorder = false,
-    }) {
-      final cells = <pw.Widget>[];
-      for (int i = 0; i < children.length; i++) {
-        cells.add(
-          pw.Expanded(
-            flex: flexes[i],
-            child: pw.Container(
-              decoration: pw.BoxDecoration(
-                color: bgColor,
-                border: pw.Border.all(width: 0.5),
-              ),
-              child: children[i],
-            ),
-          )
-        );
-      }
-      return pw.Row(
-        children: cells,
-      );
-    }
+    final rows = <pw.TableRow>[];
 
-    final rows = <pw.Widget>[];
-
-    // ── Header row 1: group labels (CSC Form 48 exact) ─────────────────────
-    rows.add(drawRow(
-      [
+    // ── Header row 1: group labels ─────────────────────
+    rows.add(pw.TableRow(
+      children: [
         cell('Day', style: hBold),
         cell('A.M.', style: hBold),
+        cell('', style: hBold),
         cell('P.M.', style: hBold),
+        cell('', style: hBold),
         cell('Undertime', style: hBold),
+        cell('', style: hBold),
       ],
-      [12, 40, 40, 24],
-      bgColor: PdfColors.grey200,
-      isTopBorder: true,
     ));
 
-    // ── Header row 2: sub-labels (Arrival / Departure) ───────────────────
-    rows.add(drawRow(
-      [
+    // ── Header row 2: sub-labels ───────────────────
+    rows.add(pw.TableRow(
+      children: [
         cell('', style: hBold),
         cell('Arrival', style: hBold),
         cell('Departure', style: hBold),
@@ -584,52 +559,43 @@ class PdfService {
         cell('Hours', style: hBold),
         cell('Minutes', style: hBold),
       ],
-      [12, 20, 20, 20, 20, 12, 12],
-      bgColor: PdfColors.grey100,
     ));
 
     for (int day = 1; day <= daysInMonth; day++) {
-      final date = DateTime(year, month, day);
-      final isWeekend = date.weekday == DateTime.saturday || date.weekday == DateTime.sunday;
       final log = logMap[day];
 
-      // ── Weekend rows: print day name centered across all time cols ──────────
-      if (isWeekend) {
-        final label = date.weekday == DateTime.saturday ? 'SATURDAY' : 'SUNDAY';
-        rows.add(drawRow([
-          cell('$day'),
-          cell(label, style: weekendStyle), // spanned 80 flex block
-          cell(''),
-          cell(''),
-        ], [12, 80, 12, 12]));
-        continue;
-      }
-
       if (log == null) {
-        // Empty weekday row — blank boxes
-        rows.add(drawRow([
-          cell('$day'),
-          cell(''), cell(''), cell(''), cell(''), cell(''), cell(''),
-        ], [12, 20, 20, 20, 20, 12, 12]));
+        // Empty weekday or weekend row — standard blank columns
+        rows.add(pw.TableRow(
+          children: [
+            cell('$day'),
+            cell(''), cell(''), cell(''), cell(''), cell(''), cell(''),
+          ],
+        ));
         continue;
       }
 
       final isWork = log.status == 'WORK';
 
-      // ── Status rows: ABSENT / LEAVE / HOLIDAY span all 4 time cols ───────
+      // ── Status rows: ABSENT / LEAVE / HOLIDAY ───────
       if (!isWork) {
         String label = log.status;
         if (label == 'HOLIDAY_FULL') label = 'HOLIDAY';
-        if (label == 'HOLIDAY_AM')   label = 'HOLIDAY (AM)';
-        if (label == 'HOLIDAY_PM')   label = 'HOLIDAY (PM)';
+        if (label == 'HOLIDAY_AM')   label = 'HOLIDAY';
+        if (label == 'HOLIDAY_PM')   label = 'HOLIDAY';
         if (label == 'EXCUSED')      label = 'LEAVE';
 
-        rows.add(drawRow([
-          cell('$day'),
-          cell(label, style: statusStyle), // spanned 80 flex block
-          cell(''),
-          cell(''),
-        ], [12, 80, 12, 12]));
+        rows.add(pw.TableRow(
+          children: [
+            cell('$day'),
+            cell(label, style: statusStyle),
+            cell(''),
+            cell(''),
+            cell(''),
+            cell(''),
+            cell(''),
+          ],
+        ));
         continue;
       }
 
@@ -659,15 +625,17 @@ class PdfService {
         if (m > 0) utMins = '$m';
       }
 
-      rows.add(drawRow([
-        cell('$day'),
-        cell(slots.amIn),
-        cell(slots.amOut),
-        cell(slots.pmIn),
-        cell(slots.pmOut),
-        cell(utHrs),
-        cell(utMins),
-      ], [12, 20, 20, 20, 20, 12, 12]));
+      rows.add(pw.TableRow(
+        children: [
+          cell('$day'),
+          cell(slots.amIn),
+          cell(slots.amOut),
+          cell(slots.pmIn),
+          cell(slots.pmOut),
+          cell(utHrs),
+          cell(utMins),
+        ],
+      ));
     }
 
     // ── TOTAL row ────────────────────────────────────────────────────
@@ -677,13 +645,31 @@ class PdfService {
     String finalTotalHrs = totalUndertimeHours > 0 ? '$totalUndertimeHours' : '';
     String finalTotalMins = totalUndertimeMins > 0 ? '$totalUndertimeMins' : '';
 
-    rows.add(drawRow([
-      cell('TOTAL', style: hBold),
-      cell(finalTotalHrs, style: hBold),
-      cell(finalTotalMins, style: hBold),
-    ], [92, 12, 12]));
+    rows.add(pw.TableRow(
+      children: [
+        cell('TOTAL', style: hBold),
+        cell('', style: hBold),
+        cell('', style: hBold),
+        cell('', style: hBold),
+        cell('', style: hBold),
+        cell(finalTotalHrs, style: hBold),
+        cell(finalTotalMins, style: hBold),
+      ],
+    ));
 
-    return pw.Column(children: rows);
+    return pw.Table(
+      border: pw.TableBorder.all(width: 0.5),
+      columnWidths: {
+        0: const pw.FlexColumnWidth(12),
+        1: const pw.FlexColumnWidth(20),
+        2: const pw.FlexColumnWidth(20),
+        3: const pw.FlexColumnWidth(20),
+        4: const pw.FlexColumnWidth(20),
+        5: const pw.FlexColumnWidth(12),
+        6: const pw.FlexColumnWidth(12),
+      },
+      children: rows,
+    );
   }
 
   static pw.Widget _buildFieldworkAnnex(List<TimeLog> fieldworkLogs, InternProfile profile, String monthName) {
