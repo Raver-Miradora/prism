@@ -1,5 +1,4 @@
 <div align="center">
-  <img src="https://raw.githubusercontent.com/Raver-Miradora/prism/main/assets/images/logo.png" alt="PRISM Logo" width="120" />
   <h1>PRISM</h1>
   <p><strong>Program Registry for Intern and Student Management</strong></p>
 
