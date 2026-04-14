@@ -410,14 +410,14 @@ class PdfService {
           ),
           pw.SizedBox(height: 16),
           
-          pw.Container(
-            width: 160,
-            decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide())),
-          ),
-          pw.SizedBox(height: 2),
           pw.Text(
             profile.name.isEmpty ? '' : profile.name.toUpperCase(),
             style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
+          ),
+          pw.SizedBox(height: 2),
+          pw.Container(
+            width: 160,
+            decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide())),
           ),
           pw.SizedBox(height: 12),
           
@@ -428,15 +428,16 @@ class PdfService {
             ],
           ),
           pw.SizedBox(height: 16),
+          pw.Text(
+            profile.supervisorName.isEmpty ? '' : profile.supervisorName.toUpperCase(), 
+            style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8)
+          ),
+          pw.SizedBox(height: 2),
           pw.Container(
             width: 160,
             decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide())),
           ),
           pw.SizedBox(height: 2),
-          pw.Text(
-            profile.supervisorName.isEmpty ? '' : profile.supervisorName.toUpperCase(), 
-            style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8)
-          ),
           pw.Text('In Charge', style: const pw.TextStyle(fontSize: 7)),
         ],
       ),
@@ -544,28 +545,16 @@ class PdfService {
             flex: flexes[i],
             child: pw.Container(
               decoration: pw.BoxDecoration(
-                border: pw.Border(
-                  right: (i < children.length - 1) ? const pw.BorderSide(width: 0.5) : pw.BorderSide.none,
-                ),
+                color: bgColor,
+                border: pw.Border.all(width: 0.5),
               ),
               child: children[i],
             ),
           )
         );
       }
-      return pw.Container(
-        decoration: pw.BoxDecoration(
-          color: bgColor,
-          border: pw.Border(
-            top: isTopBorder ? const pw.BorderSide(width: 0.5) : pw.BorderSide.none,
-            bottom: const pw.BorderSide(width: 0.5),
-            left: const pw.BorderSide(width: 0.5),
-            right: const pw.BorderSide(width: 0.5),
-          )
-        ),
-        child: pw.Row(
-          children: cells,
-        ),
+      return pw.Row(
+        children: cells,
       );
     }
 
@@ -667,7 +656,7 @@ class PdfService {
         totalUndertimeHours += h;
         totalUndertimeMins += m;
         if (h > 0) utHrs = '$h';
-        utMins = '$m';
+        if (m > 0) utMins = '$m';
       }
 
       rows.add(drawRow([
@@ -685,10 +674,13 @@ class PdfService {
     totalUndertimeHours += totalUndertimeMins ~/ 60;
     totalUndertimeMins = totalUndertimeMins % 60;
 
+    String finalTotalHrs = totalUndertimeHours > 0 ? '$totalUndertimeHours' : '';
+    String finalTotalMins = totalUndertimeMins > 0 ? '$totalUndertimeMins' : '';
+
     rows.add(drawRow([
       cell('TOTAL', style: hBold),
-      cell('$totalUndertimeHours', style: hBold),
-      cell('$totalUndertimeMins', style: hBold),
+      cell(finalTotalHrs, style: hBold),
+      cell(finalTotalMins, style: hBold),
     ], [92, 12, 12]));
 
     return pw.Column(children: rows);

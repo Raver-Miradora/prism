@@ -490,7 +490,7 @@ class _YapToReportJournalState extends ConsumerState<YapToReportJournal> {
                   if (profile == null || settings == null) return;
 
                   try {
-                    final results = await ReportGeneratorService.generateDualReport(
+                    final reportPath = await ReportGeneratorService.generateReport(
                       reports: reports,
                       profile: profile,
                       settings: settings,
@@ -503,16 +503,14 @@ class _YapToReportJournalState extends ConsumerState<YapToReportJournal> {
                       showDialog(
                         context: docCtx,
                         builder: (sCtx) => AlertDialog(
-                          title: const Text('REPORTS GENERATED'),
+                          title: const Text('REPORT GENERATED'),
                           content: Column(
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Professional reports have been saved to your Documents directory:', style: TextStyle(fontSize: 12)),
+                              const Text('Professional report has been saved to your Documents directory:', style: TextStyle(fontSize: 12)),
                               const SizedBox(height: 16),
-                              Text('PDF: ${results['pdf']}', style: const TextStyle(fontSize: 10, color: Colors.blue)),
-                              const SizedBox(height: 8),
-                              Text('WORD: ${results['docx']}', style: const TextStyle(fontSize: 10, color: Colors.blue)),
+                              Text('PDF: $reportPath', style: const TextStyle(fontSize: 10, color: Colors.blue)),
                             ],
                           ),
                           actions: [

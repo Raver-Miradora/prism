@@ -9,6 +9,8 @@ import '../services/app_feedback.dart';
 import 'widgets/prism_drawer.dart';
 import 'widgets/profile_avatar.dart';
 import 'widgets/clock_in_widget.dart';
+import 'widgets/progress_ring_widget.dart';
+import 'widgets/prism_mentor_bottom_sheet.dart';
 import '../services/security_service.dart';
 import '../controllers/reports_controller.dart';
 
@@ -31,12 +33,25 @@ class DashboardTimeclock extends ConsumerWidget {
     });
 
     final isClockedIn = state.activeLog != null;
-    final progressVal = state.accumulatedHours / state.targetHours;
-    final formattedProgress = (progressVal * 100).clamp(0, 100).toStringAsFixed(0);
 
     return Scaffold(
       backgroundColor: context.colors.surface,
       drawer: const PrismDrawer(),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (context) => Padding(
+              padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+              child: const PrismMentorBottomSheet(),
+            ),
+          );
+        },
+        backgroundColor: context.colors.primary,
+        child: Icon(Icons.auto_awesome, color: context.colors.onPrimary),
+      ),
       body: SafeArea(
         child: Column(
           children: [
@@ -60,7 +75,10 @@ class DashboardTimeclock extends ConsumerWidget {
                     const SizedBox(height: 16),
                     _buildLogAbsenceButton(context, ref),
                     const SizedBox(height: 32),
-                    _buildProgressIndicator(context, state, formattedProgress),
+                    ProgressRingWidget(
+                      accumulatedHours: state.accumulatedHours,
+                      targetHours: state.targetHours.toDouble(),
+                    ),
                     const SizedBox(height: 100),
                   ],
                 ),
@@ -464,101 +482,6 @@ class DashboardTimeclock extends ConsumerWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildProgressIndicator(BuildContext context, TimeclockState state, String formattedProgress) {
-    return Container(
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        color: context.colors.primary,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'HOURGLASS PROGRESS',
-                style: TextStyle(
-                  fontFamily: 'Public Sans',
-                  fontSize: 12,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 2.0,
-                  color: context.colors.onPrimary.withValues(alpha: 0.7),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  Text(
-                    state.accumulatedHours.toStringAsFixed(1),
-                    style: TextStyle(
-                      fontFamily: 'Public Sans',
-                      fontSize: 40,
-                      fontWeight: FontWeight.w900,
-                      color: context.colors.onPrimary,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '/ ${state.targetHours} Hours',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: context.colors.onPrimary.withValues(alpha: 0.7),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'COMPLETED THIS CYCLE',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.0,
-                  color: context.colors.onPrimary.withValues(alpha: 0.7),
-                ),
-              ),
-            ],
-          ),
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              SizedBox(
-                width: 96,
-                height: 96,
-                child: CircularProgressIndicator(
-                  value: state.accumulatedHours / state.targetHours,
-                  strokeWidth: 8,
-                  backgroundColor: context.colors.onPrimary.withValues(alpha: 0.1),
-                  color: context.colors.tertiary,
-                ),
-              ),
-              Text(
-                '$formattedProgress%',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w900,
-                  color: context.colors.onPrimary,
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }
