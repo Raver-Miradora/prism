@@ -10,6 +10,7 @@ import 'widgets/prism_drawer.dart';
 import 'widgets/profile_avatar.dart';
 import 'widgets/clock_in_widget.dart';
 import 'widgets/progress_ring_widget.dart';
+import 'widgets/dtr_heatmap_card.dart';
 import 'widgets/prism_mentor_bottom_sheet.dart';
 import '../services/security_service.dart';
 import '../controllers/reports_controller.dart';
@@ -79,6 +80,8 @@ class DashboardTimeclock extends ConsumerWidget {
                       accumulatedHours: state.accumulatedHours,
                       targetHours: state.targetHours.toDouble(),
                     ),
+                    const SizedBox(height: 32),
+                    const DtrHeatmapCard(),
                     const SizedBox(height: 100),
                   ],
                 ),
