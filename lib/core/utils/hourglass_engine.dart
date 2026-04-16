@@ -7,6 +7,8 @@ class HourglassEngine {
   /// Sums total elapsed time from amArrivalTime to pmDepartureTime.
   /// Deducts 1 hour if the elapsed time exceeds 5 hours (lunch break).
   static double calculateActualHours(TimeLog log, InternSettings settings) {
+    if (isMissedPunch(log)) return 0.0;
+    
     double totalHours = 0.0;
 
     if (log.amArrivalTime != null && log.pmDepartureTime != null) {
@@ -63,6 +65,7 @@ class HourglassEngine {
   /// Standard shift is assumed to be 8 hours. Excess minutes (overtime) are ignored.
   /// Late arrivals and early departures are considered undertime and deducted.
   static double calculateDtrRenderedHours(TimeLog log, InternSettings settings) {
+    if (isMissedPunch(log)) return 0.0;
     if (log.amArrivalTime == null || log.pmDepartureTime == null) return 0.0;
     
     // 1. Calculate Late Arrival (Tardiness)
@@ -84,5 +87,28 @@ class HourglassEngine {
     
     double renderedHours = expectedShiftHours - (totalUndertime / 60.0);
     return renderedHours < 0.0 ? 0.0 : double.parse(renderedHours.toStringAsFixed(2));
+  }
+
+  /// Detects if a punch is "Orphaned" (Incomplete and in the past).
+  static bool isMissedPunch(TimeLog log) {
+    // If status is not WORK (e.g. ABSENT, HOLIDAY), it's not a "missed punch" in this context
+    if (log.status != 'WORK') return false;
+
+    // Check if entry is incomplete
+    final bool isIncomplete = log.amArrivalTime != null && log.pmDepartureTime == null;
+    if (!isIncomplete) return false;
+
+    // Validate if the record belongs to a previous day
+    try {
+      if (log.date.isEmpty) return false;
+      final logDate = DateTime.parse(log.date);
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      
+      // If it happened before today and is still incomplete, it's missed.
+      return logDate.isBefore(today);
+    } catch (_) {
+      return false;
+    }
   }
 }

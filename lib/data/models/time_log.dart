@@ -25,6 +25,7 @@ class TimeLog {
   final String status;         // WORK, ABSENT, EXCUSED, HOLIDAY_*
   final String recordStatus;   // PRESENT, ABSENT, LEAVE, HOLIDAY
   final String? remarks;
+  final bool hasMissedPunch;
 
   TimeLog({
     this.id,
@@ -46,6 +47,7 @@ class TimeLog {
     this.status = 'WORK',
     this.recordStatus = 'PRESENT',
     this.remarks,
+    this.hasMissedPunch = false,
   });
 
   factory TimeLog.fromMap(Map<String, dynamic> map) {
@@ -69,6 +71,7 @@ class TimeLog {
       status: (map['status'] as String?) ?? 'WORK',
       recordStatus: (map['record_status'] as String?) ?? 'PRESENT',
       remarks: map['remarks'] as String?,
+      hasMissedPunch: map['has_missed_punch'] == 1 || map['has_missed_punch'] == true,
     );
   }
 
@@ -93,6 +96,7 @@ class TimeLog {
       'status': status,
       'record_status': recordStatus,
       'remarks': remarks,
+      'has_missed_punch': hasMissedPunch ? 1 : 0,
     };
   }
 
@@ -116,6 +120,7 @@ class TimeLog {
     String? status,
     String? recordStatus,
     String? remarks,
+    bool? hasMissedPunch,
   }) {
     return TimeLog(
       id: id ?? this.id,
@@ -137,6 +142,7 @@ class TimeLog {
       status: status ?? this.status,
       recordStatus: recordStatus ?? this.recordStatus,
       remarks: remarks ?? this.remarks,
+      hasMissedPunch: hasMissedPunch ?? this.hasMissedPunch,
     );
   }
 }
