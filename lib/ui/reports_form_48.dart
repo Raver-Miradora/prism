@@ -223,13 +223,16 @@ class ReportsForm48 extends ConsumerWidget {
     int totalUndertimeMins = 0;
     double totalValidHours = 0.0;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: context.colors.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.colors.outlineVariant.withAlpha(25)),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))],
-      ),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Container(
+        width: 600, // Safe minimum width for 4-column DTR layout
+        decoration: BoxDecoration(
+          color: context.colors.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: context.colors.outlineVariant.withAlpha(25)),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))],
+        ),
       child: Column(
         children: [
           // Table Header Bar
@@ -331,8 +334,9 @@ class ReportsForm48 extends ConsumerWidget {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
 
   Widget _buildTableRowHeader(BuildContext context) {

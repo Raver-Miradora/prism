@@ -42,22 +42,39 @@ class _ProgressRingWidgetState extends State<ProgressRingWidget> {
     return GestureDetector(
       onTap: _flipCard,
       behavior: HitTestBehavior.opaque,
-      child: AnimatedSwitcher(
+child: AnimatedSwitcher(
         duration: const Duration(milliseconds: 600),
+        layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {
+          return Stack(
+            alignment: Alignment.center,
+            children: [
+              if (previousChildren.isNotEmpty) previousChildren.first,
+              if (currentChild != null) currentChild,
+            ],
+          );
+        },
         transitionBuilder: (Widget child, Animation<double> animation) {
-          final rotateAnim = Tween(begin: pi, end: 0.0).animate(animation);
           return AnimatedBuilder(
-            animation: rotateAnim,
+            animation: animation,
             child: child,
-            builder: (context, widget) {
-              final isUnder = (ValueKey(_isFlipped) != widget?.key);
-              final value = isUnder ? min(rotateAnim.value, pi / 2) : rotateAnim.value;
+            builder: (context, child) {
+              // Synchronized rotation for a single "coin flip" feel
+              // Exiting child (1 -> 0): rotates 0 to pi
+              // Entering child (0 -> 1): rotates pi to 0
+              final angle = (1 - animation.value) * pi;
+              
+              // Only show the side facing the user to prevent backface bleeding
+              final opacity = angle <= pi / 2 ? 1.0 : 0.0;
+              
               return Transform(
                 transform: Matrix4.identity()
-                  ..setEntry(3, 2, 0.002)
-                  ..rotateY(value),
+                  ..setEntry(3, 2, 0.002) // Perspective for 3D depth
+                  ..rotateY(angle),
                 alignment: Alignment.center,
-                child: widget,
+                child: Opacity(
+                  opacity: opacity,
+                  child: child,
+                ),
               );
             },
           );
@@ -82,12 +99,12 @@ class _ProgressRingWidgetState extends State<ProgressRingWidget> {
       ),
       child: Column(
         children: [
-          Text(
+          const Text(
             'INTERNSHIP JOURNEY',
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w900,
-              color: context.colors.outline,
+              color: Colors.black,
               letterSpacing: 2.0,
             ),
           ),
@@ -142,7 +159,7 @@ class _ProgressRingWidgetState extends State<ProgressRingWidget> {
             'Tap for details',
             style: TextStyle(
               fontSize: 10,
-              color: context.colors.outline.withValues(alpha: 0.5),
+              color: Colors.black.withValues(alpha: 0.5),
               fontStyle: FontStyle.italic,
             ),
           ),

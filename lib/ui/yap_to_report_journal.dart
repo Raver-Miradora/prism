@@ -2,13 +2,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:printing/printing.dart';
 
 import '../core/theme/civic_horizon_theme.dart';
 import '../controllers/yap_journal_controller.dart';
 import '../controllers/settings_controller.dart';
 import '../data/repositories/daily_report_repository.dart';
 
-import '../services/report_generator_service.dart';
+import '../services/pdf_service.dart';
 import '../services/app_feedback.dart';
 import 'widgets/prism_drawer.dart';
 import 'widgets/profile_avatar.dart';
@@ -496,34 +497,20 @@ class _YapToReportJournalState extends ConsumerState<YapToReportJournal> {
               return;
             }
 
-            final reportPath = await ReportGeneratorService.generateReport(
-              reports: reports,
-              profile: profile,
-              settings: settings,
-              start: range.start,
-              end: range.end,
+            final pdfBytes = await PdfService.buildAccomplishmentReportBytes(
+              reports,
+              profile,
+              settings,
+              range.start,
+              range.end,
               customSummaryBullets: summary, // Use raw un-previewed summary
             );
 
             if (context.mounted) {
               Navigator.pop(context); // pop loading
-              showDialog(
-                context: context,
-                builder: (sCtx) => AlertDialog(
-                  title: const Text('REPORT GENERATED'),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Professional report has been saved to your Documents directory:', style: TextStyle(fontSize: 12)),
-                      const SizedBox(height: 16),
-                      Text('PDF: $reportPath', style: const TextStyle(fontSize: 10, color: Colors.blue)),
-                    ],
-                  ),
-                  actions: [
-                    TextButton(onPressed: () => Navigator.pop(sCtx), child: const Text('OK')),
-                  ],
-                ),
+              await Printing.layoutPdf(
+                onLayout: (format) async => pdfBytes,
+                name: 'Accomplishment_Report_${profile.name.replaceAll(' ', '_')}.pdf',
               );
             }
           } catch (e) {
