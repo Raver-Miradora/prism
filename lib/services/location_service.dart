@@ -10,9 +10,13 @@ class LocationException implements Exception {
 }
 
 class LocationService {
-  /// Ensures permissions are granted and returns the position using cached records first.
-  /// If the cache is stale, fetches a fresh low-accuracy position with a strict timeout.
-  Future<Position> getCurrentPosition({Duration freshTimeout = const Duration(seconds: 5)}) async {
+  /// Ensures permissions are granted and returns a position.
+  /// Prioritizes a fresh fetch with a timeout, but falls back to the last known
+  /// position if the fetch fails or times out to prevent UX blocks.
+  Future<Position> getCurrentPosition({
+    Duration freshTimeout = const Duration(seconds: 10),
+    LocationAccuracy accuracy = LocationAccuracy.low,
+  }) async {
     bool serviceEnabled;
     LocationPermission permission;
 
@@ -23,7 +27,7 @@ class LocationService {
       // Re-check after returning from settings
       serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        throw LocationException('Location services are required to verify your office presence. Please turn on your device GPS.');
+        throw LocationException('Location services are required. Please turn on your device GPS.');
       }
     }
 
@@ -36,31 +40,27 @@ class LocationService {
     }
 
     if (permission == LocationPermission.deniedForever) {
-      throw LocationException(
-          'Location permissions are permanently denied, we cannot request permissions.');
+      throw LocationException('Location permissions are permanently denied.');
     }
 
     try {
-      // 1. Check Cached Location First
-      final Position? lastKnownPosition = await Geolocator.getLastKnownPosition();
-      
-      if (lastKnownPosition != null) {
-        final age = DateTime.now().difference(lastKnownPosition.timestamp);
-        // If the position is less than 5 minutes old, return it instantly
-        if (age < const Duration(minutes: 5)) {
-          return lastKnownPosition;
-        }
-      }
-
-      // 2. Low-Accuracy Fresh Fetch (with 3. Strict Timeout Rule)
+      // 1. Primary: Fresh Fetch with aggressive accuracy and strict timeout
       return await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.low, // Lower accuracy prevents trying to lock onto distant GPS satellites
+        desiredAccuracy: accuracy,
       ).timeout(freshTimeout);
 
-    } on TimeoutException {
-      throw LocationException('Unable to verify location. Please step outside or connect to the internet momentarily.');
     } catch (e) {
-      throw LocationException('Could not determine location: $e');
+      // 2. Secondary: If fresh fetch fails (timeout or error), fall back to last known immediately
+      final Position? lastKnown = await Geolocator.getLastKnownPosition();
+      if (lastKnown != null) {
+        return lastKnown;
+      }
+
+      // 3. Last Resort: Fail
+      if (e is TimeoutException) {
+        throw LocationException('Signal weak. Please step outside or connect to Wi-Fi for a faster fix.');
+      }
+      throw LocationException('Unable to capture location: $e');
     }
   }
 

@@ -10,9 +10,8 @@ enum _BubbleType { user, typing, ai }
 
 class _ChatMessage {
   final _BubbleType type;
-  // For [ai] bubbles: full text — the typewriter widget handles reveal.
-  // For [typing] bubbles: ignored.
   final String text;
+  bool hasAnimated = false; // State flag to prevent re-triggering animations on scroll
   _ChatMessage({required this.type, this.text = ''});
 }
 
@@ -266,9 +265,8 @@ class _PrismMentorBottomSheetState extends State<PrismMentorBottomSheet>
       itemCount: _messages.length,
       itemBuilder: (context, index) {
         final msg = _messages[index];
-        // Use a ValueKey based on index and type to ensure animations trigger for new items
         return _PopAnimation(
-          key: ValueKey('msg_${index}_${msg.type}'),
+          message: msg,
           child: _buildBubble(msg, index, colors),
         );
       },
@@ -283,11 +281,11 @@ class _PrismMentorBottomSheetState extends State<PrismMentorBottomSheet>
         return _TypingIndicatorBubble(colors: colors);
       case _BubbleType.ai:
         return _AiBubble(
-          text: msg.text,
+          msg: msg,
           colors: colors,
           onCharacterRevealed: () => _scrollToBottom(force: false),
           onFinished: () {
-            if (index == _messages.length - 1) {
+            if (mounted && index == _messages.length - 1) {
               setState(() => _showSuggestions = true);
             }
           },
@@ -359,14 +357,18 @@ class _PrismMentorBottomSheetState extends State<PrismMentorBottomSheet>
 
 class _PopAnimation extends StatelessWidget {
   final Widget child;
-  const _PopAnimation({super.key, required this.child});
+  final _ChatMessage message;
+  const _PopAnimation({required this.child, required this.message});
 
   @override
   Widget build(BuildContext context) {
+    if (message.hasAnimated) return child;
+
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
       duration: const Duration(milliseconds: 350),
       curve: Curves.easeOutBack,
+      onEnd: () => message.hasAnimated = true,
       builder: (context, value, child) {
         return Opacity(
           opacity: value.clamp(0.0, 1.0),
@@ -509,12 +511,12 @@ class _TypingIndicatorBubbleState extends State<_TypingIndicatorBubble>
 // ──────────────────────────────────────────────────────────────────────────────
 
 class _AiBubble extends StatefulWidget {
-  final String text;
+  final _ChatMessage msg;
   final ColorScheme colors;
   final VoidCallback onCharacterRevealed;
   final VoidCallback onFinished;
   const _AiBubble({
-    required this.text,
+    required this.msg,
     required this.colors,
     required this.onCharacterRevealed,
     required this.onFinished,
@@ -535,7 +537,12 @@ class _AiBubbleState extends State<_AiBubble> {
   @override
   void initState() {
     super.initState();
-    _startTypewriter();
+    if (widget.msg.hasAnimated) {
+      _displayed = widget.msg.text;
+      _index = widget.msg.text.length;
+    } else {
+      _startTypewriter();
+    }
   }
 
   void _startTypewriter() {
@@ -544,14 +551,15 @@ class _AiBubbleState extends State<_AiBubble> {
         t.cancel();
         return;
       }
-      final next = (_index + _charsPerTick).clamp(0, widget.text.length);
+      final next = (_index + _charsPerTick).clamp(0, widget.msg.text.length);
       setState(() {
-        _displayed = widget.text.substring(0, next);
+        _displayed = widget.msg.text.substring(0, next);
         _index = next;
       });
       widget.onCharacterRevealed();
-      if (_index >= widget.text.length) {
+      if (_index >= widget.msg.text.length) {
         t.cancel();
+        widget.msg.hasAnimated = true;
         widget.onFinished();
       }
     });
@@ -561,18 +569,31 @@ class _AiBubbleState extends State<_AiBubble> {
   Widget build(BuildContext context) {
     return Align(
       alignment: Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 14, right: 48),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
-        decoration: BoxDecoration(
-          color: widget.colors.surfaceContainerHighest,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(16),
-            topRight: Radius.circular(16),
-            bottomRight: Radius.circular(16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          CircleAvatar(
+            radius: 12,
+            backgroundColor: widget.colors.primary.withValues(alpha: 0.1),
+            child: Icon(Icons.smart_toy_rounded, size: 14, color: widget.colors.primary),
           ),
-        ),
-        child: _buildRichText(_displayed),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 14, right: 48),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+              decoration: BoxDecoration(
+                color: widget.colors.surfaceContainerHighest,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                  bottomRight: Radius.circular(16),
+                ),
+              ),
+              child: _buildRichText(_displayed),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -90,10 +90,11 @@ class _OnboardingPage2State extends ConsumerState<OnboardingPage2> {
     setState(() => _isCapturing = true);
     try {
       final LocationService locationService = LocationService();
-      // Use a 15-second timeout for onboarding — GPS needs extra time indoors
-      // to get an accurate base coordinate for the office. Do NOT reduce this.
+      // Use a strict 10-second timeout for onboarding per user request.
+      // Falls back immediately to the OS cache if fresh GPS lock fails.
       Position position = await locationService.getCurrentPosition(
-        freshTimeout: const Duration(seconds: 15),
+        freshTimeout: const Duration(seconds: 10),
+        accuracy: LocationAccuracy.best,
       );
       
       ref.read(onboardingProvider.notifier).updateOfficeLocation(position.latitude, position.longitude);

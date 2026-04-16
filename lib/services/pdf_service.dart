@@ -203,15 +203,15 @@ class PdfService {
                     pw.SizedBox(height: 24),
                     pw.Column(
                       children: [
+                        pw.Text(
+                          profile.supervisorName.isEmpty ? '' : profile.supervisorName.toUpperCase(),
+                          style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
+                        ),
                         pw.Container(
                           width: 180,
                           decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide())),
                         ),
                         pw.SizedBox(height: 2),
-                        pw.Text(
-                          profile.supervisorName.isEmpty ? '' : profile.supervisorName.toUpperCase(),
-                          style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
-                        ),
                         pw.Text('OFFICE HEAD', style: const pw.TextStyle(fontSize: 8)),
                       ],
                     ),
@@ -535,20 +535,10 @@ class PdfService {
 
     final rows = <pw.TableRow>[];
 
-    // ── Header row 1: group labels ─────────────────────
-    rows.add(pw.TableRow(
-      children: [
-        cell('Day', style: hBold),
-        cell('A.M.', style: hBold),
-        cell('', style: hBold),
-        cell('P.M.', style: hBold),
-        cell('', style: hBold),
-        cell('Undertime', style: hBold),
-        cell('', style: hBold),
-      ],
-    ));
-
-    // ── Header row 2: sub-labels ───────────────────
+    // Headers are now handled by _buildMergedHeader outside the table rows
+    // to simulate colspan for A.M. / P.M. grouping.
+    
+    // Header: sub-labels (Day, Arrival, Departure, etc.)
     rows.add(pw.TableRow(
       children: [
         cell('', style: hBold),
@@ -657,18 +647,55 @@ class PdfService {
       ],
     ));
 
-    return pw.Table(
-      border: pw.TableBorder.all(width: 0.5),
-      columnWidths: {
-        0: const pw.FlexColumnWidth(12),
-        1: const pw.FlexColumnWidth(20),
-        2: const pw.FlexColumnWidth(20),
-        3: const pw.FlexColumnWidth(20),
-        4: const pw.FlexColumnWidth(20),
-        5: const pw.FlexColumnWidth(12),
-        6: const pw.FlexColumnWidth(12),
-      },
-      children: rows,
+    return pw.Column(
+      children: [
+        // Simulated Merged Header (Colspan fix)
+        pw.Row(
+          children: [
+            _mergedHeaderCell('Day', 12, hBold, left: true, right: true, top: true, bottom: true),
+            _mergedHeaderCell('A.M.', 40, hBold, right: true, top: true, bottom: true),
+            _mergedHeaderCell('P.M.', 40, hBold, right: true, top: true, bottom: true),
+            _mergedHeaderCell('Undertime', 24, hBold, right: true, top: true, bottom: true),
+          ],
+        ),
+        pw.Table(
+          border: const pw.TableBorder(
+            left: pw.BorderSide(width: 0.5),
+            right: pw.BorderSide(width: 0.5),
+            bottom: pw.BorderSide(width: 0.5),
+            horizontalInside: pw.BorderSide(width: 0.5),
+            verticalInside: pw.BorderSide(width: 0.5),
+          ),
+          columnWidths: {
+            0: const pw.FlexColumnWidth(12),
+            1: const pw.FlexColumnWidth(20),
+            2: const pw.FlexColumnWidth(20),
+            3: const pw.FlexColumnWidth(20),
+            4: const pw.FlexColumnWidth(20),
+            5: const pw.FlexColumnWidth(12),
+            6: const pw.FlexColumnWidth(12),
+          },
+          children: rows,
+        ),
+      ],
+    );
+  }
+
+  static pw.Widget _mergedHeaderCell(String text, double flex, pw.TextStyle style, {bool left = false, bool right = false, bool top = false, bool bottom = false}) {
+    return pw.Expanded(
+      flex: flex.toInt(),
+      child: pw.Container(
+        height: 14,
+        decoration: pw.BoxDecoration(
+          border: pw.Border(
+            top: top ? const pw.BorderSide(width: 0.5) : pw.BorderSide.none,
+            bottom: bottom ? const pw.BorderSide(width: 0.5) : pw.BorderSide.none,
+            left: left ? const pw.BorderSide(width: 0.5) : pw.BorderSide.none,
+            right: right ? const pw.BorderSide(width: 0.5) : pw.BorderSide.none,
+          ),
+        ),
+        child: pw.Center(child: pw.Text(text, style: style)),
+      ),
     );
   }
 
@@ -734,9 +761,9 @@ class PdfService {
                children: [
                  pw.Text('Certified Correct:', style: bodyStyle),
                  pw.SizedBox(height: 24),
+                 pw.Text(profile.name.toUpperCase(), style: headerStyle),
                  pw.Container(width: 180, decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide()))),
                  pw.SizedBox(height: 2),
-                 pw.Text(profile.name.toUpperCase(), style: headerStyle),
                  pw.Text('INTERN', style: const pw.TextStyle(fontSize: 8)),
                ],
              ),
@@ -745,9 +772,9 @@ class PdfService {
                children: [
                  pw.Text('Verified by:', style: bodyStyle),
                  pw.SizedBox(height: 24),
+                 pw.Text(profile.supervisorName.toUpperCase(), style: headerStyle),
                  pw.Container(width: 180, decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide()))),
                  pw.SizedBox(height: 2),
-                 pw.Text(profile.supervisorName.toUpperCase(), style: headerStyle),
                  pw.Text('SUPERVISOR SIGNATURE OVER PRINTED NAME', style: const pw.TextStyle(fontSize: 7)),
                ],
              ),
