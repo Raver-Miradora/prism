@@ -51,49 +51,66 @@ class _PrismMentorBottomSheetState extends State<PrismMentorBottomSheet>
       CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut),
     );
 
-    // Greet the intern
+    // Greet the intern with animated pop
     _messages.add(_ChatMessage(
       type: _BubbleType.ai,
-      text:
-          "Hello! I am your offline PRISM Mentor. I can help with basic LGU procedures like dress codes, transmittal formats, or timesheet rules. What do you need help with?",
+      text: "👋 Hello! I am your **PRISM Mentor**. I can help with **LGU rules**, **DTR procedures**, and **OJT Academy modules**. What would you like to know about?",
     ));
+
+    // Initialize discovery suggestions
+    _currentSuggestions = PrismMentorService.getSuggestions("hi");
+    
+    // Slight delay to show suggestions after the first bubble reveals
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      if (mounted) setState(() => _showSuggestions = true);
+    });
   }
 
   // ── Sending logic ──────────────────────────────────────────────────────────
 
-  void _sendMessage() {
-    final text = _inputController.text.trim();
+  void _sendMessage({String? customText}) {
+    final text = customText ?? _inputController.text.trim();
     if (text.isEmpty || _isThinking) return;
 
     setState(() {
       _messages.add(_ChatMessage(type: _BubbleType.user, text: text));
       _messages.add(_ChatMessage(type: _BubbleType.typing)); // dots placeholder
       _isThinking = true;
+      _showSuggestions = false; // Hide old suggestions when new query starts
     });
-    _inputController.clear();
+    if (customText == null) _inputController.clear();
     _scrollToBottom();
 
     // Simulate thinking delay
     Future.delayed(const Duration(milliseconds: 800), () {
       if (!mounted) return;
       final response = PrismMentorService.getResponse(text);
+      final suggestions = PrismMentorService.getSuggestions(text);
 
       setState(() {
         // Remove the typing-indicator bubble
         _messages.removeWhere((m) => m.type == _BubbleType.typing);
         // Add the real AI bubble — typewriter kicks in automatically
         _messages.add(_ChatMessage(type: _BubbleType.ai, text: response));
+        _currentSuggestions = suggestions;
         _isThinking = false;
       });
       _scrollToBottom();
     });
   }
 
-  void _scrollToBottom() {
+  void _scrollToBottom({bool force = false}) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
+      if (!_scrollController.hasClients) return;
+
+      final pos = _scrollController.position;
+      final isAtBottom = pos.pixels >= pos.maxScrollExtent - 100;
+
+      // Smart Snap: Only scroll automatically if the user is already near the bottom
+      // or if we explicitly force it (e.g. sending a new message).
+      if (isAtBottom || force) {
         _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
+          pos.maxScrollExtent,
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOut,
         );
@@ -117,8 +134,53 @@ class _PrismMentorBottomSheetState extends State<PrismMentorBottomSheet>
         children: [
           _buildHeader(colors),
           Expanded(child: _buildMessageList(colors)),
+          _buildSuggestions(colors),
           _buildInputArea(colors),
         ],
+      ),
+    );
+  }
+
+  // ── Suggestions (V2 Feature) ───────────────────────────────────────────────
+
+  List<String> _currentSuggestions = [];
+  bool _showSuggestions = false;
+
+  Widget _buildSuggestions(ColorScheme colors) {
+    if (_currentSuggestions.isEmpty) return const SizedBox.shrink();
+    
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 300),
+      child: AnimatedOpacity(
+        opacity: _showSuggestions ? 1.0 : 0.0,
+        duration: const Duration(milliseconds: 400),
+        child: _showSuggestions 
+          ? Container(
+              height: 44,
+              padding: const EdgeInsets.only(bottom: 8),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: _currentSuggestions.map((suggestion) {
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ActionChip(
+                        label: Text(
+                          suggestion,
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: colors.primary),
+                        ),
+                        backgroundColor: colors.primary.withValues(alpha: 0.08),
+                        side: BorderSide(color: colors.primary.withValues(alpha: 0.1)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        onPressed: () => _sendMessage(customText: suggestion),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            )
+          : const SizedBox.shrink(),
       ),
     );
   }
@@ -137,12 +199,24 @@ class _PrismMentorBottomSheetState extends State<PrismMentorBottomSheet>
       ),
       child: Row(
         children: [
-          // Pulsing avatar
+          // Pulsing and Rotating avatar
           ScaleTransition(
             scale: _pulseAnim,
-            child: CircleAvatar(
-              backgroundColor: colors.primary.withValues(alpha: 0.12),
-              child: Icon(Icons.auto_awesome, color: colors.primary, size: 20),
+            child: AnimatedRotation(
+              turns: _isThinking ? 1.0 : 0.0,
+              duration: const Duration(seconds: 2),
+              curve: Curves.linear,
+              onEnd: () {
+                // Keep rotating if still thinking
+                if (_isThinking) {
+                  // This is a bit hacky for a linear repeat in AnimatedRotation, 
+                  // but for a "thinking" state it works well.
+                }
+              },
+              child: CircleAvatar(
+                backgroundColor: colors.primary.withValues(alpha: 0.12),
+                child: Icon(Icons.smart_toy_rounded, color: colors.primary, size: 20),
+              ),
             ),
           ),
           const SizedBox(width: 14),
@@ -162,7 +236,7 @@ class _PrismMentorBottomSheetState extends State<PrismMentorBottomSheet>
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 300),
                   child: Text(
-                    _isThinking ? 'Thinking...' : 'Offline AI Assistant',
+                    _isThinking ? 'Thinking...' : 'Expert AI Assistant',
                     key: ValueKey(_isThinking),
                     style: TextStyle(
                       fontSize: 11,
@@ -192,20 +266,33 @@ class _PrismMentorBottomSheetState extends State<PrismMentorBottomSheet>
       itemCount: _messages.length,
       itemBuilder: (context, index) {
         final msg = _messages[index];
-        switch (msg.type) {
-          case _BubbleType.user:
-            return _UserBubble(text: msg.text, colors: colors);
-          case _BubbleType.typing:
-            return _TypingIndicatorBubble(colors: colors);
-          case _BubbleType.ai:
-            return _AiBubble(
-              text: msg.text,
-              colors: colors,
-              onCharacterRevealed: _scrollToBottom,
-            );
-        }
+        // Use a ValueKey based on index and type to ensure animations trigger for new items
+        return _PopAnimation(
+          key: ValueKey('msg_${index}_${msg.type}'),
+          child: _buildBubble(msg, index, colors),
+        );
       },
     );
+  }
+
+  Widget _buildBubble(_ChatMessage msg, int index, ColorScheme colors) {
+    switch (msg.type) {
+      case _BubbleType.user:
+        return _UserBubble(text: msg.text, colors: colors);
+      case _BubbleType.typing:
+        return _TypingIndicatorBubble(colors: colors);
+      case _BubbleType.ai:
+        return _AiBubble(
+          text: msg.text,
+          colors: colors,
+          onCharacterRevealed: () => _scrollToBottom(force: false),
+          onFinished: () {
+            if (index == _messages.length - 1) {
+              setState(() => _showSuggestions = true);
+            }
+          },
+        );
+    }
   }
 
   // ── Input area ─────────────────────────────────────────────────────────────
@@ -213,7 +300,7 @@ class _PrismMentorBottomSheetState extends State<PrismMentorBottomSheet>
   Widget _buildInputArea(ColorScheme colors) {
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
         child: Row(
           children: [
             Expanded(
@@ -221,7 +308,7 @@ class _PrismMentorBottomSheetState extends State<PrismMentorBottomSheet>
                 controller: _inputController,
                 enabled: !_isThinking,
                 decoration: InputDecoration(
-                  hintText: _isThinking ? 'Mentor is typing...' : 'Ask about standard procedures...',
+                  hintText: _isThinking ? 'Mentor is typing...' : 'Ask about procedures...',
                   hintStyle: TextStyle(fontSize: 14, color: colors.outline),
                   filled: true,
                   fillColor: colors.surfaceContainerLowest,
@@ -245,7 +332,7 @@ class _PrismMentorBottomSheetState extends State<PrismMentorBottomSheet>
                 ),
                 child: IconButton(
                   icon: Icon(Icons.send_rounded, color: colors.onPrimary),
-                  onPressed: _isThinking ? null : _sendMessage,
+                  onPressed: _isThinking ? null : () => _sendMessage(),
                 ),
               ),
             ),
@@ -263,6 +350,35 @@ class _PrismMentorBottomSheetState extends State<PrismMentorBottomSheet>
     _inputController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Entry Animation Wrapper
+// ──────────────────────────────────────────────────────────────────────────────
+
+class _PopAnimation extends StatelessWidget {
+  final Widget child;
+  const _PopAnimation({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeOutBack,
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value.clamp(0.0, 1.0),
+          child: Transform.scale(
+            scale: 0.8 + (value * 0.2), // 0.8 to 1.0
+            alignment: Alignment.center,
+            child: child,
+          ),
+        );
+      },
+      child: child,
+    );
   }
 }
 
@@ -389,17 +505,19 @@ class _TypingIndicatorBubbleState extends State<_TypingIndicatorBubble>
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// AI bubble with typewriter reveal
+// AI bubble with typewriter reveal and RichText Support (V2)
 // ──────────────────────────────────────────────────────────────────────────────
 
 class _AiBubble extends StatefulWidget {
   final String text;
   final ColorScheme colors;
   final VoidCallback onCharacterRevealed;
+  final VoidCallback onFinished;
   const _AiBubble({
     required this.text,
     required this.colors,
     required this.onCharacterRevealed,
+    required this.onFinished,
   });
 
   @override
@@ -411,9 +529,8 @@ class _AiBubbleState extends State<_AiBubble> {
   Timer? _timer;
   int _index = 0;
 
-  // Characters per tick — higher = faster typing feel
   static const _charsPerTick = 2;
-  static const _tickInterval = Duration(milliseconds: 20);
+  static const _tickInterval = Duration(milliseconds: 15);
 
   @override
   void initState() {
@@ -433,7 +550,10 @@ class _AiBubbleState extends State<_AiBubble> {
         _index = next;
       });
       widget.onCharacterRevealed();
-      if (_index >= widget.text.length) t.cancel();
+      if (_index >= widget.text.length) {
+        t.cancel();
+        widget.onFinished();
+      }
     });
   }
 
@@ -452,13 +572,44 @@ class _AiBubbleState extends State<_AiBubble> {
             bottomRight: Radius.circular(16),
           ),
         ),
-        child: Text(
-          _displayed,
-          style: TextStyle(
-            fontSize: 14,
-            color: widget.colors.onSurface,
-            height: 1.4,
-          ),
+        child: _buildRichText(_displayed),
+      ),
+    );
+  }
+
+  /// Markdown-Lite: Parses **bold** and *italics*
+  Widget _buildRichText(String text) {
+    final List<TextSpan> spans = [];
+    final regExp = RegExp(r'\*\*(.*?)\*\*|\*(.*?)\*|([^*]+)');
+    final matches = regExp.allMatches(text);
+
+    for (var match in matches) {
+      if (match.group(1) != null) {
+        // Bold
+        spans.add(TextSpan(
+          text: match.group(1),
+          style: const TextStyle(fontWeight: FontWeight.w900),
+        ));
+      } else if (match.group(2) != null) {
+        // Italic
+        spans.add(TextSpan(
+          text: match.group(2),
+          style: const TextStyle(fontStyle: FontStyle.italic),
+        ));
+      } else if (match.group(3) != null) {
+        // Plain
+        spans.add(TextSpan(text: match.group(3)));
+      }
+    }
+
+    return RichText(
+      text: TextSpan(
+        children: spans,
+        style: TextStyle(
+          fontSize: 14,
+          color: widget.colors.onSurface,
+          height: 1.4,
+          fontFamily: 'Inter',
         ),
       ),
     );
