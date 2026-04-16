@@ -27,7 +27,7 @@ dependencies:
   
   # PDF Generation
   pdf: ^3.10.4
-  printing: ^5.11.0
+  printing: ^5.14.3
   
   # UI & Design System
   google_fonts: ^6.1.0
