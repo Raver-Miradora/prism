@@ -26,6 +26,7 @@ class TimeLog {
   final String recordStatus;   // PRESENT, ABSENT, LEAVE, HOLIDAY
   final String? remarks;
   final bool hasMissedPunch;
+  final bool isGeofenceBypassed;
 
   TimeLog({
     this.id,
@@ -48,6 +49,7 @@ class TimeLog {
     this.recordStatus = 'PRESENT',
     this.remarks,
     this.hasMissedPunch = false,
+    this.isGeofenceBypassed = false,
   });
 
   factory TimeLog.fromMap(Map<String, dynamic> map) {
@@ -72,6 +74,7 @@ class TimeLog {
       recordStatus: (map['record_status'] as String?) ?? 'PRESENT',
       remarks: map['remarks'] as String?,
       hasMissedPunch: map['has_missed_punch'] == 1 || map['has_missed_punch'] == true,
+      isGeofenceBypassed: map['is_geofence_bypassed'] == 1,
     );
   }
 
@@ -97,6 +100,7 @@ class TimeLog {
       'record_status': recordStatus,
       'remarks': remarks,
       'has_missed_punch': hasMissedPunch ? 1 : 0,
+      'is_geofence_bypassed': isGeofenceBypassed ? 1 : 0,
     };
   }
 
@@ -121,6 +125,7 @@ class TimeLog {
     String? recordStatus,
     String? remarks,
     bool? hasMissedPunch,
+    bool? isGeofenceBypassed,
   }) {
     return TimeLog(
       id: id ?? this.id,
@@ -143,6 +148,7 @@ class TimeLog {
       recordStatus: recordStatus ?? this.recordStatus,
       remarks: remarks ?? this.remarks,
       hasMissedPunch: hasMissedPunch ?? this.hasMissedPunch,
+      isGeofenceBypassed: isGeofenceBypassed ?? this.isGeofenceBypassed,
     );
   }
 }
