@@ -58,9 +58,9 @@ class LocationService {
 
       // 3. Last Resort: Fail
       if (e is TimeoutException) {
-        throw LocationException('Signal weak. Please step outside or connect to Wi-Fi for a faster fix.');
+        throw LocationException('GPS Signal Weak: Please step away from tall buildings, move closer to a window, or toggle your Wi-Fi/Data to help the system pinpoint your location.');
       }
-      throw LocationException('Unable to capture location: $e');
+      throw LocationException('Location Capture Failed: ${e.toString()}');
     }
   }
 
