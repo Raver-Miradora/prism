@@ -9,7 +9,7 @@ class PrismMentorService {
   // Public API
   // ──────────────────────────────────────────────────────────────────────────
 
-  static String getResponse(String input) {
+  static String getResponse(String input, [String? programType]) {
     // Aggressive cleaning: lowercase, trim, and strip punctuation
     final lower = input.toLowerCase().trim().replaceAll(RegExp(r'[^\w\s]'), '');
 
@@ -18,6 +18,10 @@ class PrismMentorService {
       return _getGreetingResponse();
     }
 
+    // ── Context-Aware Ambiguity Routing ──────────────────────────────────────
+    final ambiguityResponse = _handleAmbiguity(lower, programType);
+    if (ambiguityResponse != null) return ambiguityResponse;
+
     // ── Standard Matching ────────────────────────────────────────────────────
     
     // 1. Run topic match first — if it hits, return immediately.
@@ -25,22 +29,27 @@ class PrismMentorService {
     if (topicResponse != null) return topicResponse;
 
     // 2. Aggressive Default Refusal (Catch-All)
-    // Check if it's off-topic based on signals OR substantial length without hits.
     if (_isOffTopic(lower)) {
       return "I am strictly programmed to assist with **PRISM app navigation** "
           "and **LGU Lagonoy procedures**. I cannot fulfill outside requests.";
     }
 
     // 3. Dynamic Fallback Roulette
-    // Soft fallback — related but unrecognised phrasing.
     return _getRandomFallback();
   }
 
   /// Returns a list of suggested follow-up questions based on the last topic.
-  static List<String> getSuggestions(String input) {
+  static List<String> getSuggestions(String input, [String? programType]) {
     final q = input.toLowerCase().trim().replaceAll(RegExp(r'[^\w\s]'), '');
     
-    // Look for a specific knowledge match first
+    // Check ambiguity routing first for suggestions
+    if (_isRequirementQuery(q)) {
+      final contextProgram = _getMappedProgram(q, programType);
+      if (contextProgram == 'OJT') return ['OJT Hours', 'Journal Entry', 'Target Hours'];
+      if (contextProgram == 'SPES') return ['SPES Salary', 'SPES Guidelines', 'DTR Rules'];
+    }
+
+    // Look for a specific knowledge match
     for (var entry in MentorKnowledgeBase.knowledgeGraph.entries) {
       if (_any(q, entry.key)) {
         return List<String>.from(entry.value['suggestions'] ?? []);
@@ -54,6 +63,48 @@ class PrismMentorService {
   // ──────────────────────────────────────────────────────────────────────────
   // Topic routing
   // ──────────────────────────────────────────────────────────────────────────
+
+  static String? _handleAmbiguity(String q, String? programType) {
+    if (!_isRequirementQuery(q)) return null;
+
+    final contextProgram = _getMappedProgram(q, programType);
+
+    if (contextProgram == 'OJT') {
+      return MentorKnowledgeBase.knowledgeGraph.entries
+          .firstWhere((e) => e.key.contains('ojt requirements'))
+          .value['response'];
+    }
+    
+    if (contextProgram == 'SPES') {
+      return MentorKnowledgeBase.knowledgeGraph.entries
+          .firstWhere((e) => e.key.contains('spes requirements'))
+          .value['response'];
+    }
+
+    return "Are you asking for the **OJT** or **SPES** requirements? Both programs have different folder and folder-clearance checklists.";
+  }
+
+  /// Prioritizes explicit keywords in the query over the user profile context.
+  /// Also maps aliases (e.g., Immersion -> OJT).
+  static String? _getMappedProgram(String q, String? profileProgram) {
+    // 1. Explicit Intent Priority
+    if (q.contains('spes')) return 'SPES';
+    if (q.contains('ojt') || q.contains('immersion')) return 'OJT';
+
+    // 2. Profile Context Fallback (with Alias Mapping)
+    if (profileProgram == null) return null;
+    final p = profileProgram.toUpperCase();
+
+    if (p.contains('OJT') || p.contains('IMMERSION') || p.contains('PRACTICUM')) return 'OJT';
+    if (p.contains('SPES')) return 'SPES';
+    
+    return null;
+  }
+
+  static bool _isRequirementQuery(String q) {
+    const keywords = ['requirement', 'checklist', 'folder', 'docs', 'list', 'check list'];
+    return keywords.any((kw) => q.contains(kw));
+  }
 
   static String? _matchTopic(String q) {
     // Basic Keyword Map Lookup

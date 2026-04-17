@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/prism_mentor_service.dart';
+import '../../controllers/settings_controller.dart';
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Data model
@@ -19,14 +21,14 @@ class _ChatMessage {
 // Bottom sheet
 // ──────────────────────────────────────────────────────────────────────────────
 
-class PrismMentorBottomSheet extends StatefulWidget {
+class PrismMentorBottomSheet extends ConsumerStatefulWidget {
   const PrismMentorBottomSheet({super.key});
 
   @override
-  State<PrismMentorBottomSheet> createState() => _PrismMentorBottomSheetState();
+  ConsumerState<PrismMentorBottomSheet> createState() => _PrismMentorBottomSheetState();
 }
 
-class _PrismMentorBottomSheetState extends State<PrismMentorBottomSheet>
+class _PrismMentorBottomSheetState extends ConsumerState<PrismMentorBottomSheet>
     with SingleTickerProviderStateMixin {
   final TextEditingController _inputController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -56,8 +58,9 @@ class _PrismMentorBottomSheetState extends State<PrismMentorBottomSheet>
       text: "👋 Hello! I am your **PRISM Mentor**. I can help with **LGU rules**, **DTR procedures**, and **OJT Academy modules**. What would you like to know about?",
     ));
 
-    // Initialize discovery suggestions
-    _currentSuggestions = PrismMentorService.getSuggestions("hi");
+    // Initialize discovery suggestions with program context
+    final initialProgramType = ref.read(settingsProvider).settings?.programType;
+    _currentSuggestions = PrismMentorService.getSuggestions("hi", initialProgramType);
     
     // Slight delay to show suggestions after the first bubble reveals
     Future.delayed(const Duration(milliseconds: 1500), () {
@@ -71,6 +74,8 @@ class _PrismMentorBottomSheetState extends State<PrismMentorBottomSheet>
     final text = customText ?? _inputController.text.trim();
     if (text.isEmpty || _isThinking) return;
 
+    final programType = ref.read(settingsProvider).settings?.programType;
+
     setState(() {
       _messages.add(_ChatMessage(type: _BubbleType.user, text: text));
       _messages.add(_ChatMessage(type: _BubbleType.typing)); // dots placeholder
@@ -83,8 +88,8 @@ class _PrismMentorBottomSheetState extends State<PrismMentorBottomSheet>
     // Simulate thinking delay
     Future.delayed(const Duration(milliseconds: 800), () {
       if (!mounted) return;
-      final response = PrismMentorService.getResponse(text);
-      final suggestions = PrismMentorService.getSuggestions(text);
+      final response = PrismMentorService.getResponse(text, programType);
+      final suggestions = PrismMentorService.getSuggestions(text, programType);
 
       setState(() {
         // Remove the typing-indicator bubble
@@ -287,6 +292,7 @@ class _PrismMentorBottomSheetState extends State<PrismMentorBottomSheet>
           onFinished: () {
             if (mounted && index == _messages.length - 1) {
               setState(() => _showSuggestions = true);
+              _scrollToBottom(force: true);
             }
           },
         );

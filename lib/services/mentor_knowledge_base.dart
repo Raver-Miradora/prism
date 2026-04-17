@@ -14,9 +14,9 @@ class MentorKnowledgeBase {
       'suggestions': ['Phone Etiquette', 'Active Listening', 'Email Tips'],
     },
 
-    ['writing', 'letter', 'memo', 'email', 'transmittal']: {
-      'response': 'Official LGU communications must be **clear, concise, and courteous** (The 3 Cs). Always double-check spelling and grammar. **Transmittal letters** must clearly state the recipient, the subject, and list all attached documents.',
-      'suggestions': ['HRMO Addressee', 'Letter Format', 'Memo Tips'],
+    ['writing', 'letter', 'memo', 'email', 'transmittal', 'nar format', 'narrative report']: {
+      'response': 'Official LGU communications must be **clear, concise, and courteous** (The 3 Cs). Always double-check spelling and grammar. **Transmittal letters** must clearly state the recipient, the subject, and list all attached documents. For **Narrative Reports**, focus on day-to-day accomplishments and learning outcomes.',
+      'suggestions': ['HRMO Addressee', 'Letter Format', 'Writing Module'],
     },
 
     ['stress', 'overwhelmed', 'tired', 'burnout', 'mental health']: {
@@ -39,9 +39,21 @@ class MentorKnowledgeBase {
       'suggestions': ['DTR Rules', 'Punctuality', 'Taking Initiative'],
     },
 
+    // ── INTERNSHIP REQUIREMENTS ──────────────────────────────────────────────
+    
+    ['ojt requirements', 'ojt checklist', 'ojt folder', 'immersion requirements', 'immersion checklist', 'immersion folder']: {
+      'response': 'For **OJT**, your **1st Folder** needs: Endorsement Letter, Application Letter, Resume/CV, and MOA. Your **2nd Folder** (Clearance) needs: DTR, Accomplishment Report, Narrative Report, Certificate of Completion, and Evaluation Form.',
+      'suggestions': ['DTR Rules', 'Generating PDF', 'Narrative Report'],
+    },
+
+    ['spes requirements', 'spes checklist', 'spes folder']: {
+      'response': 'For **SPES**, your **1st Folder** needs: SPES Application Form, Birth Certificate, Copy of Grades, and Indigency Certificate. Your **2nd Folder** (Clearance) needs: DTR, Accomplishment Report, and Payroll.',
+      'suggestions': ['SPES Salary', 'SPES Guidelines', 'HRMO Location'],
+    },
+
     // ── LGU & APP PROCEDURES ─────────────────────────────────────────────────
 
-    ['spes', 'special program', 'student employment']: {
+    ['spes', 'special program', 'student employment', 'spes salary', 'stipend', 'payroll']: {
       'response': 'For **SPES**, employment lasts 20 to 78 days. **DOLE** shoulders 40% of your salary, while **LGU Lagonoy** pays the remaining 60%. \n\n*Note: You must maintain passing grades to stay in the program.*',
       'suggestions': ['SPES Salary', 'SPES Requirements', 'DTR Rules'],
     },
