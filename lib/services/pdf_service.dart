@@ -135,12 +135,33 @@ class PdfService {
                )
             ),
             
-            pw.Text('The following listed below are my accomplishments under ${profile.agencyOffice.isEmpty ? "[Office Assigned]" : profile.agencyOffice}.',
+            pw.Text('The following listed below are my accomplishments under ',
                 style: const pw.TextStyle(fontSize: 10)),
+            pw.FittedBox(
+              fit: pw.BoxFit.scaleDown,
+              alignment: pw.Alignment.centerLeft,
+              child: pw.Text(
+                profile.agencyOffice.isEmpty ? "[Office Assigned]" : profile.agencyOffice,
+                style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+              ),
+            ),
             pw.SizedBox(height: 12),
 
-            pw.Text('Name: ${profile.name.isEmpty ? "________________________" : profile.name}',
-                style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+            pw.Row(
+              children: [
+                pw.Text('Name: ', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+                pw.Expanded(
+                  child: pw.FittedBox(
+                    fit: pw.BoxFit.scaleDown,
+                    alignment: pw.Alignment.centerLeft,
+                    child: pw.Text(
+                      profile.name.isEmpty ? "________________________" : profile.name,
+                      style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ],
+            ),
             pw.SizedBox(height: 20),
 
             // Period | Nature of Works table
@@ -203,9 +224,15 @@ class PdfService {
                     pw.SizedBox(height: 24),
                     pw.Column(
                       children: [
-                        pw.Text(
-                          profile.supervisorName.isEmpty ? '' : profile.supervisorName.toUpperCase(),
-                          style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
+                        pw.Container(
+                          width: 180,
+                          child: pw.FittedBox(
+                            fit: pw.BoxFit.scaleDown,
+                            child: pw.Text(
+                              profile.supervisorName.isEmpty ? '' : profile.supervisorName.toUpperCase(),
+                              style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
+                            ),
+                          ),
                         ),
                         pw.Container(
                           width: 180,
@@ -223,9 +250,15 @@ class PdfService {
                   children: [
                     pw.Text('Prepared & Submitted by:', style: const pw.TextStyle(fontSize: 10)),
                     pw.SizedBox(height: 20),
-                    pw.Text(
-                      profile.name.isEmpty ? '' : profile.name.toUpperCase(),
-                      style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+                    pw.Container(
+                      width: 180,
+                      child: pw.FittedBox(
+                        fit: pw.BoxFit.scaleDown,
+                        child: pw.Text(
+                          profile.name.isEmpty ? '' : profile.name.toUpperCase(),
+                          style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+                        ),
+                      ),
                     ),
                     pw.Container(
                       width: 180,
@@ -364,9 +397,15 @@ class PdfService {
           pw.Text('-----o0o-----', style: normal),
           pw.SizedBox(height: 6),
           
-          pw.Text(
-            profile.name.isEmpty ? '____________________________' : profile.name.toUpperCase(), 
-            style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)
+          pw.Container(
+            width: 220,
+            child: pw.FittedBox(
+              fit: pw.BoxFit.scaleDown,
+              child: pw.Text(
+                profile.name.isEmpty ? '____________________________' : profile.name.toUpperCase(), 
+                style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)
+              ),
+            ),
           ),
           pw.Text('(Name)', style: const pw.TextStyle(fontSize: 7)),
           pw.SizedBox(height: 10),
@@ -711,7 +750,18 @@ class PdfService {
         pw.Center(child: pw.Text('Audit Trail for Off-Site Fieldwork', style: pw.TextStyle(fontSize: 10, fontStyle: pw.FontStyle.italic))),
         pw.SizedBox(height: 24),
         
-        pw.Text('Name: ${profile.name.toUpperCase()}', style: headerStyle),
+        pw.Row(
+          children: [
+            pw.Text('Name: ', style: headerStyle),
+            pw.Expanded(
+              child: pw.FittedBox(
+                fit: pw.BoxFit.scaleDown,
+                alignment: pw.Alignment.centerLeft,
+                child: pw.Text(profile.name.toUpperCase(), style: headerStyle),
+              ),
+            ),
+          ],
+        ),
         pw.Text('Period: $monthName', style: bodyStyle),
         pw.SizedBox(height: 16),
         
