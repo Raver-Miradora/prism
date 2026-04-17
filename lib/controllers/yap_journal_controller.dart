@@ -30,7 +30,7 @@ class YapJournalController extends StateNotifier<YapJournalState> {
 
   YapJournalController()
       : super(YapJournalState(
-            selectedDate: DateTime.now(),
+            selectedDate: DateTime.now().toUtc().add(const Duration(hours: 8)),
             reportStatus: const AsyncValue.loading())) {
     _loadReportForDate(state.selectedDate);
   }
@@ -93,8 +93,8 @@ class YapJournalController extends StateNotifier<YapJournalState> {
       final updatedReport = DailyReport(
         id: currentReport?.id ?? previousData?.id,
         date: dateStr,
-        rawNotes: formalText, // Inline overwrite
-        formalReport: null,
+        rawNotes: rawNotes, // Preserve original draft
+        formalReport: formalText, // Store AI version separately
       );
 
       await _repo.saveReport(updatedReport);
