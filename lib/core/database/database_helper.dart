@@ -20,13 +20,19 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 11,
+      version: 13,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
   }
 
   Future _upgradeDB(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 13) {
+      try {
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_time_logs_date ON time_logs(date)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_daily_reports_date ON daily_reports(date)');
+      } catch (_) {}
+    }
     if (oldVersion < 2) {
       try {
         await db.execute('ALTER TABLE intern_profile ADD COLUMN profile_image_path TEXT');
@@ -43,6 +49,11 @@ class DatabaseHelper {
       try {
         await db.execute('ALTER TABLE intern_settings ADD COLUMN school_name TEXT');
         await db.execute('ALTER TABLE intern_settings ADD COLUMN course_program TEXT');
+      } catch (_) {}
+    }
+    if (oldVersion < 12) {
+      try {
+        await db.execute('ALTER TABLE time_logs ADD COLUMN is_geofence_bypassed INTEGER NOT NULL DEFAULT 0');
       } catch (_) {}
     }
     if (oldVersion < 4) {
@@ -165,7 +176,8 @@ class DatabaseHelper {
         record_status TEXT NOT NULL DEFAULT 'PRESENT',
         remarks TEXT,
         fieldwork_location TEXT,
-        fieldwork_purpose TEXT
+        fieldwork_purpose TEXT,
+        is_geofence_bypassed INTEGER NOT NULL DEFAULT 0
       )
     ''');
 
