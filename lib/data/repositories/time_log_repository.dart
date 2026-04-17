@@ -1,5 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 import '../../core/database/database_helper.dart';
+import '../../core/utils/hourglass_engine.dart';
 import '../models/time_log.dart';
 
 class TimeLogRepository {
@@ -52,15 +53,12 @@ class TimeLogRepository {
     for (var m in maps) {
        try {
           double dayTotal = 0.0;
-          if (m['am_in'] != null && m['am_out'] != null) {
-              final inTime = DateTime.parse(m['am_in']);
-              final outTime = DateTime.parse(m['am_out']);
-              dayTotal += outTime.difference(inTime).inMinutes / 60.0;
-          }
-          if (m['pm_in'] != null && m['pm_out'] != null) {
-              final inTime = DateTime.parse(m['pm_in']);
-              final outTime = DateTime.parse(m['pm_out']);
-              dayTotal += outTime.difference(inTime).inMinutes / 60.0;
+          if (m['am_arrival_time'] != null && m['pm_departure_time'] != null) {
+              final inTime = HourglassEngine.safeParse(m['am_arrival_time']);
+              final outTime = HourglassEngine.safeParse(m['pm_departure_time']);
+              final diff = outTime.difference(inTime).inMinutes / 60.0;
+              // Simple lunch break logic: > 5 hrs equals 1 hr deduction
+              dayTotal += (diff > 5.0) ? (diff - 1.0) : diff;
           }
           total += dayTotal;
        } catch (_) {}

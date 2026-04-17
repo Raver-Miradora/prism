@@ -3,17 +3,25 @@ import '../../data/models/time_log.dart';
 import '../../data/models/intern_settings.dart';
 
 class HourglassEngine {
+  /// Consistent parsing helper that returns Unix Epoch if malformed to prevent crashes
+  static DateTime safeParse(String? dateStr, [DateTime? fallback]) {
+    if (dateStr == null || dateStr.isEmpty) return fallback ?? DateTime(1970);
+    try {
+      return DateTime.parse(dateStr);
+    } catch (_) {
+      return fallback ?? DateTime(1970);
+    }
+  }
+
   /// Calculates the accumulated hours for a single [TimeLog]
-  /// Sums total elapsed time from amArrivalTime to pmDepartureTime.
-  /// Deducts 1 hour if the elapsed time exceeds 5 hours (lunch break).
   static double calculateActualHours(TimeLog log, InternSettings settings) {
     if (isMissedPunch(log)) return 0.0;
     
     double totalHours = 0.0;
 
     if (log.amArrivalTime != null && log.pmDepartureTime != null) {
-      final start = DateTime.parse(log.amArrivalTime!);
-      final end = DateTime.parse(log.pmDepartureTime!);
+      final start = safeParse(log.amArrivalTime);
+      final end = safeParse(log.pmDepartureTime);
       totalHours = end.difference(start).inMinutes / 60.0;
       
       // Apply 1-hour lunch break deduction if shift length > 5 hours
@@ -24,7 +32,7 @@ class HourglassEngine {
 
     // Philippines Government 4-Day Workweek Logic (GIP Program)
     if (settings.programType == 'GIP') {
-      final firstTime = log.amArrivalTime != null ? DateTime.parse(log.amArrivalTime!) : null;
+      final firstTime = log.amArrivalTime != null ? safeParse(log.amArrivalTime) : null;
       if (firstTime != null && (firstTime.weekday == DateTime.friday || 
           firstTime.weekday == DateTime.saturday || 
           firstTime.weekday == DateTime.sunday)) {
@@ -36,11 +44,11 @@ class HourglassEngine {
   }
 
   /// Calculates total minute-based tardiness.
-  /// Compares actual `amArrivalTime` against `expectedTimeIn` (e.g. "08:00")
   static int calculateLateDeductions(TimeLog log, String expectedInTime) {
     if (log.amArrivalTime == null) return 0;
     
-    final inTime = DateTime.parse(log.amArrivalTime!);
+    final inTime = safeParse(log.amArrivalTime);
+    if (inTime.year == 1970) return 0; // Invalid parse
     
     try {
       final formatter = DateFormat("HH:mm");
@@ -55,15 +63,11 @@ class HourglassEngine {
       if (difference.inMinutes > 0) {
         return difference.inMinutes;
       }
-    } catch (_) {
-       // fallback if format parsing fails
-    }
+    } catch (_) {}
     return 0;
   }
 
   /// Calculates the officially rendered hours according to government DTR rules.
-  /// Standard shift is assumed to be 8 hours. Excess minutes (overtime) are ignored.
-  /// Late arrivals and early departures are considered undertime and deducted.
   static double calculateDtrRenderedHours(TimeLog log, InternSettings settings) {
     if (isMissedPunch(log)) return 0.0;
     if (log.amArrivalTime == null || log.pmDepartureTime == null) return 0.0;
@@ -74,7 +78,7 @@ class HourglassEngine {
     // 2. Calculate Early Departure
     int earlyMinutes = 0;
     try {
-      final timeOut = DateTime.parse(log.pmDepartureTime!);
+      final timeOut = safeParse(log.pmDepartureTime);
       final expectedOut = DateFormat('HH:mm').parse(settings.expectedTimeOut);
       final expectedOutDT = DateTime(timeOut.year, timeOut.month, timeOut.day, expectedOut.hour, expectedOut.minute);
       final diffOut = expectedOutDT.difference(timeOut);
@@ -91,21 +95,18 @@ class HourglassEngine {
 
   /// Detects if a punch is "Orphaned" (Incomplete and in the past).
   static bool isMissedPunch(TimeLog log) {
-    // If status is not WORK (e.g. ABSENT, HOLIDAY), it's not a "missed punch" in this context
     if (log.status != 'WORK') return false;
-
-    // Check if entry is incomplete
     final bool isIncomplete = log.amArrivalTime != null && log.pmDepartureTime == null;
     if (!isIncomplete) return false;
 
-    // Validate if the record belongs to a previous day
     try {
       if (log.date.isEmpty) return false;
-      final logDate = DateTime.parse(log.date);
-      final now = DateTime.now();
+      final logDate = safeParse(log.date);
+      if (logDate.year == 1970) return false;
+      
+      final now = DateTime.now().toUtc().add(const Duration(hours: 8));
       final today = DateTime(now.year, now.month, now.day);
       
-      // If it happened before today and is still incomplete, it's missed.
       return logDate.isBefore(today);
     } catch (_) {
       return false;
