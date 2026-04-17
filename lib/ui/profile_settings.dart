@@ -422,12 +422,35 @@ class _ProfileSettingsState extends ConsumerState<ProfileSettings> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      state.settings?.officeLat != null ? 'Base Location Active' : 'No Base Location Set',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: context.colors.onSurface,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          state.settings?.officeLat != null ? 'Base Location Active' : 'No Base Location Set',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: context.colors.onSurface,
+                          ),
+                        ),
+                        if (state.settings?.officeLat == null) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: Colors.orange.withValues(alpha: 0.5)),
+                            ),
+                            child: const Text(
+                              'BYPASS ACTIVE',
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.orange,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ],
                 ),
