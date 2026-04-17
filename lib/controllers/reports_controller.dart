@@ -48,8 +48,8 @@ class ReportsController extends StateNotifier<ReportsState> {
   final InternProfileRepository _profileRepo = InternProfileRepository();
 
   ReportsController() : super(ReportsState(
-    selectedYear: DateTime.now().year,
-    selectedMonth: DateTime.now().month,
+    selectedYear: (DateTime.now().toUtc().add(const Duration(hours: 8))).year,
+    selectedMonth: (DateTime.now().toUtc().add(const Duration(hours: 8))).month,
     logsStatus: const AsyncValue.loading(),
     profileStatus: const AsyncValue.loading(),
     settingsStatus: const AsyncValue.loading(),

@@ -406,7 +406,7 @@ class DashboardTimeclock extends ConsumerWidget {
   }
 
   void _showLogAbsenceDialog(BuildContext context, WidgetRef ref) {
-    DateTime selectedDate = DateTime.now();
+    DateTime selectedDate = DateTime.now().toUtc().add(const Duration(hours: 8));
     String selectedStatus = 'ABSENT';
     final remarksController = TextEditingController();
 

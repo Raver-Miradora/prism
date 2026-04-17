@@ -41,6 +41,7 @@ class TimeclockState {
 
   TimeclockState copyWith({
     TimeLog? activeLog,
+    bool clearActiveLog = false,
     double? accumulatedHours,
     int? targetHours,
     String? errorMessage,
@@ -50,7 +51,7 @@ class TimeclockState {
     String? fieldworkPurpose,
   }) {
     return TimeclockState(
-      activeLog: activeLog ?? this.activeLog,
+      activeLog: clearActiveLog ? null : (activeLog ?? this.activeLog),
       accumulatedHours: accumulatedHours ?? this.accumulatedHours,
       targetHours: targetHours ?? this.targetHours,
       errorMessage: errorMessage, // We reset error on copy if not provided
@@ -109,7 +110,7 @@ class TimeclockController extends StateNotifier<TimeclockState> {
       }
 
       // Check if there is an active shift today
-      final todayStr = DateTime.now().toIso8601String().split('T')[0];
+      final todayStr = _getNow().toIso8601String().split('T')[0];
       final activeLog = await _repository.getActiveLogForToday(todayStr);
       
       // Load analytical accumulated progress
@@ -117,6 +118,7 @@ class TimeclockController extends StateNotifier<TimeclockState> {
 
       state = state.copyWith(
         activeLog: activeLog,
+        clearActiveLog: activeLog == null,
         accumulatedHours: accumulated,
         targetHours: dynamicTargetHours,
         isLoading: false,
@@ -168,7 +170,7 @@ class TimeclockController extends StateNotifier<TimeclockState> {
         throw 'Your device does not support identity verification, which is required to safely log time.';
       }
 
-      final timeNow = DateTime.now();
+      final timeNow = _getNow();
       final timeStr = timeNow.toIso8601String();
       final hour = timeNow.hour;
 
@@ -178,6 +180,8 @@ class TimeclockController extends StateNotifier<TimeclockState> {
       String? photoPath;
       double? posLat;
       double? posLng;
+
+      bool isBypassed = false;
 
       if (!state.isFieldworkMode) {
         // ── BRANCH A: STANDARD OFFICE ────────────────────────────────────────
@@ -197,6 +201,9 @@ class TimeclockController extends StateNotifier<TimeclockState> {
           if (distance > 50) {
             throw 'Out of Bounds: You are ${distance.round()} meters away from the deployment zone. You must be within 50 meters to clock in.';
           }
+        } else {
+          isBypassed = true;
+          debugPrint('PRISM_LOG: [Office] Geofence Bypassed: Office coordinates not set in profile.');
         }
         // photoPath stays null — no camera for standard office clock-ins.
         debugPrint('PRISM_LOG: [Office] Geofence passed. Saving log without photo.');
@@ -234,6 +241,7 @@ class TimeclockController extends StateNotifier<TimeclockState> {
           isFieldwork: state.isFieldworkMode,
           fieldworkLocation: state.fieldworkLocation,
           fieldworkPurpose: state.fieldworkPurpose,
+          isGeofenceBypassed: isBypassed,
           status: 'WORK',
         );
         await _repository.insertLog(log);
@@ -249,6 +257,7 @@ class TimeclockController extends StateNotifier<TimeclockState> {
           latPmDeparture: posLat ?? 0.0,
           lngPmDeparture: posLng ?? 0.0,
           pmDeparturePhotoPath: photoPath, // null for office, path for fieldwork
+          isGeofenceBypassed: existingLog.isGeofenceBypassed || isBypassed,
         );
         await _repository.updateLog(log);
         debugPrint('PRISM_LOG: PM Out transition committed.');
@@ -329,6 +338,11 @@ class TimeclockController extends StateNotifier<TimeclockState> {
     }
   }
 
+  /// Consistent UTC+8 reference for all persistence logic
+  DateTime _getNow() {
+    return DateTime.now().toUtc().add(const Duration(hours: 8));
+  }
+
   /// Special handler for recovery when a user missed a previous step.
   Future<void> logManualPunch() async {
     final phase = state.punchPhase;
@@ -336,8 +350,11 @@ class TimeclockController extends StateNotifier<TimeclockState> {
 
     state = state.copyWith(isLoading: true);
     try {
-      final existingLog = state.activeLog!;
-      final timeStr = DateTime.now().toIso8601String();
+      final existingLog = state.activeLog;
+      if (existingLog == null) {
+        throw 'No active session found for recovery.';
+      }
+      final timeStr = _getNow().toIso8601String();
       
       TimeLog log = existingLog;
       if (phase == PunchPhase.pmOut) {

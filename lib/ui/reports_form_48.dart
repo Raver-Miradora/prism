@@ -276,7 +276,7 @@ class ReportsForm48 extends ConsumerWidget {
           // Dynamically map table rows
           ...logs.map((log) {
             final isWork = log.status == 'WORK';
-            final dtRef = log.amArrivalTime != null ? DateTime.parse(log.amArrivalTime!) : DateTime.parse(log.date);
+            final dtRef = log.amArrivalTime != null ? HourglassEngine.safeParse(log.amArrivalTime) : HourglassEngine.safeParse(log.date);
             final strDate = DateFormat('MMM dd, yyyy').format(dtRef);
             final strDay = DateFormat('EEEE').format(dtRef);
             
@@ -286,8 +286,8 @@ class ReportsForm48 extends ConsumerWidget {
             if (displayStatus == 'HOLIDAY_AM') displayStatus = 'HOLIDAY (AM)';
             if (displayStatus == 'HOLIDAY_PM') displayStatus = 'HOLIDAY (PM)';
 
-            String sAmArr = isWork ? (log.amArrivalTime != null ? DateFormat('hh:mm').format(DateTime.parse(log.amArrivalTime!)) : '--:--') : displayStatus;
-            String sPmDep = isWork ? (log.pmDepartureTime != null ? DateFormat('hh:mm').format(DateTime.parse(log.pmDepartureTime!)) : '--:--') : (log.remarks ?? '');
+            String sAmArr = isWork ? (log.amArrivalTime != null ? DateFormat('hh:mm').format(HourglassEngine.safeParse(log.amArrivalTime)) : '--:--') : displayStatus;
+            String sPmDep = isWork ? (log.pmDepartureTime != null ? DateFormat('hh:mm').format(HourglassEngine.safeParse(log.pmDepartureTime)) : '--:--') : (log.remarks ?? '');
             
             int lateVal = 0;
             if (settings != null && log.amArrivalTime != null && isWork) {
