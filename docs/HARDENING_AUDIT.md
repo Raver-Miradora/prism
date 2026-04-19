@@ -15,3 +15,9 @@ A ruthless codebase audit was conducted across five critical domains:
 - **Improved**: Converted `DashboardTimeclock` to `ConsumerStatefulWidget` to maintain a persistent `_clockStream`, eliminating redundant subscription churn on every rebuild.
 - **Fixed**: Implemented missing `dispose()` methods in `PrismMentorBottomSheet` for `AnimationController` and `ScrollController`.
 - **Fixed**: Guaranteed deterministic disposal of `TextEditingController`s in all modal dialogs (Absence and Fieldwork) using `.whenComplete()`.
+
+## Domain 2 & 3: Null Safety & SQLite Integrity
+- **Critical Fix**: Hardened `DailyReport.fromMap` with null-safe casting and sentinel dates to prevent fatal crashes on older database schemas.
+- **Critical Fix**: Patched `TimeLog.fromMap` to handle nullable SQLite columns correctly, replacing unsafe hard-casts with robust null-coalescing.
+- **Improved**: Implemented sentinel-based `copyWith` in `InternSettings` to allow explicit clearing of nullable double fields (GPS coordinates).
+- **Data Guard**: Added repository-level filtering to silently drop corrupted rows before they reach the UI layer.
