@@ -170,7 +170,7 @@ class DtrHeatmapCard extends ConsumerWidget {
           final isMissed = HourglassEngine.isMissedPunch(log);
           if (isMissed) {
              hasError = true;
-             squareColor = Colors.red.shade400;
+             squareColor = context.colors.errorContainer;
              tooltipText = '${DateFormat('EEEE, MMM d').format(date)}: Missed Punch! Zero hours credited for incomplete shift.';
           } else if (log.status == 'WORK') {
             hours = HourglassEngine.calculateDtrRenderedHours(log, settings);
@@ -205,19 +205,19 @@ class DtrHeatmapCard extends ConsumerWidget {
               color: squareColor,
               borderRadius: BorderRadius.circular(6),
               boxShadow: (hasError)
-                ? [BoxShadow(color: Colors.red.withValues(alpha: 0.2), blurRadius: 4, offset: const Offset(0, 2))]
+                ? [BoxShadow(color: context.colors.error.withValues(alpha: 0.2), blurRadius: 4, offset: const Offset(0, 2))]
                 : (isPerfect) 
                   ? [BoxShadow(color: colors.primary.withValues(alpha: 0.2), blurRadius: 4, offset: const Offset(0, 2))]
                   : null,
               border: Border.all(
-                color: hasError ? Colors.red.withValues(alpha: 0.2) : colors.outline.withValues(alpha: 0.05),
+                color: hasError ? context.colors.error.withValues(alpha: 0.2) : colors.outline.withValues(alpha: 0.05),
                 width: 1,
               ),
               gradient: (hasError)
                 ? LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [Colors.red.shade400, Colors.red.shade600],
+                    colors: [context.colors.error, context.colors.errorContainer],
                   )
                 : (isPerfect)
                   ? LinearGradient(
@@ -236,7 +236,7 @@ class DtrHeatmapCard extends ConsumerWidget {
                   color: (isPerfect)
                     ? colors.onPrimary.withValues(alpha: 0.5)
                     : hasError 
-                      ? Colors.white.withValues(alpha: 0.4)
+                      ? context.colors.onError.withValues(alpha: 0.7)
                       : context.colors.outline.withValues(alpha: 0.3),
                 ),
               ),
@@ -251,7 +251,7 @@ class DtrHeatmapCard extends ConsumerWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        _legendSquare(Colors.red.shade400),
+        _legendSquare(context.colors.errorContainer),
         const SizedBox(width: 4),
         Text('Missed', style: TextStyle(fontSize: 9, color: context.colors.outline)),
         const SizedBox(width: 12),
