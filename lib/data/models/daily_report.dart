@@ -14,10 +14,11 @@ class DailyReport {
   });
 
   factory DailyReport.fromMap(Map<String, dynamic> map) {
+    final rawDate = map['date'];
     return DailyReport(
-      id: map['id'] as int?,
-      date: map['date'] as String,
-      rawNotes: map['raw_notes'] as String,
+      id: (map['id'] as num?)?.toInt(),
+      date: (rawDate is String && rawDate.isNotEmpty) ? rawDate : '1970-01-01',
+      rawNotes: (map['raw_notes'] as String?) ?? '',
       formalReport: map['formal_report'] as String?,
     );
   }
