@@ -15,11 +15,28 @@ import 'widgets/prism_mentor_bottom_sheet.dart';
 import '../services/security_service.dart';
 import '../controllers/reports_controller.dart';
 
-class DashboardTimeclock extends ConsumerWidget {
+class DashboardTimeclock extends ConsumerStatefulWidget {
   const DashboardTimeclock({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DashboardTimeclock> createState() => _DashboardTimeclockState();
+}
+
+class _DashboardTimeclockState extends ConsumerState<DashboardTimeclock> {
+  // W8 Fix: Create the clock stream ONCE in initState, not on every build()
+  late final Stream<DateTime> _clockStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _clockStream = Stream.periodic(
+      const Duration(seconds: 1),
+      (_) => DateTime.now().toUtc().add(const Duration(hours: 8)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(timeclockControllerProvider);
     final notifier = ref.read(timeclockControllerProvider.notifier);
     final autoTimeAsync = ref.watch(autoTimeProvider);
@@ -139,9 +156,9 @@ class DashboardTimeclock extends ConsumerWidget {
       sessionStart = 'STARTED AT ${DateFormat('hh:mm:ss a').format(dtStart)}';
     }
 
-    // Always show real-time ticking clock
+    // Always show real-time ticking clock using the persistent stream from initState
     return StreamBuilder<DateTime>(
-      stream: Stream.periodic(const Duration(seconds: 1), (_) => DateTime.now().toUtc().add(const Duration(hours: 8))),
+      stream: _clockStream,
       builder: (ctx, snapshot) {
         final dt = snapshot.data ?? DateTime.now().toUtc().add(const Duration(hours: 8));
         String label = state.activeLog != null 
@@ -408,6 +425,7 @@ class DashboardTimeclock extends ConsumerWidget {
   void _showLogAbsenceDialog(BuildContext context, WidgetRef ref) {
     DateTime selectedDate = DateTime.now().toUtc().add(const Duration(hours: 8));
     String selectedStatus = 'ABSENT';
+    // Controller now owned by the dialog's lifetime via onClosed disposal
     final remarksController = TextEditingController();
 
     final statusOptions = {
@@ -418,7 +436,7 @@ class DashboardTimeclock extends ConsumerWidget {
       'HOLIDAY_PM': 'Holiday (PM Only)',
     };
 
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
@@ -469,10 +487,11 @@ class DashboardTimeclock extends ConsumerWidget {
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
             ElevatedButton(
               onPressed: () async {
+                final remarks = remarksController.text;
                 await ref.read(timeclockControllerProvider.notifier).logAttendanceStatus(
                   selectedDate,
                   selectedStatus,
-                  remarksController.text,
+                  remarks,
                 );
                 // Also refresh the Reports screen if open
                 ref.read(reportsControllerProvider.notifier).loadData(
@@ -486,7 +505,7 @@ class DashboardTimeclock extends ConsumerWidget {
           ],
         ),
       ),
-    );
+    ).whenComplete(remarksController.dispose); // ✅ Dispose guaranteed on close
   }
 
   void _showFieldworkAuthorizationDialog(BuildContext context, TimeclockController notifier) {
@@ -494,7 +513,7 @@ class DashboardTimeclock extends ConsumerWidget {
     final purposeController = TextEditingController();
     final formKey = GlobalKey<FormState>();
 
-    showDialog(
+    showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
@@ -589,7 +608,11 @@ class DashboardTimeclock extends ConsumerWidget {
           ),
         ],
       ),
-    );
+    ).whenComplete(() {
+      // ✅ Both controllers disposed deterministically when dialog closes
+      locController.dispose();
+      purposeController.dispose();
+    });
   }
 
   Widget _buildSecurityLockBanner(BuildContext context) {
