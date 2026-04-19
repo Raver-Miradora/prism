@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../core/theme/civic_horizon_theme.dart';
 import '../controllers/reports_controller.dart';
 import '../core/utils/hourglass_engine.dart';
+import '../services/app_feedback.dart';
 import 'widgets/prism_drawer.dart';
 import 'widgets/profile_avatar.dart';
 
@@ -164,18 +165,19 @@ class ReportsForm48 extends ConsumerWidget {
 
     return GestureDetector(
       onTap: isLoading ? null : () async {
-        showDialog(
+        showDialog<void>(
           context: context,
           barrierDismissible: false,
           builder: (ctx) => const Center(child: CircularProgressIndicator()),
         );
         try {
           await notifier.generatePDF();
-          if (context.mounted) Navigator.pop(context); // pop loading
+          if (!context.mounted) return;
+          Navigator.of(context, rootNavigator: true).pop(); // pop loading securely
         } catch (e) {
-          if (context.mounted) {
-            Navigator.pop(context);
-          }
+          if (!context.mounted) return;
+          Navigator.of(context, rootNavigator: true).pop();
+          AppFeedback.showError(context, 'PDF generation failed: $e');
         }
       },
       child: AnimatedContainer(
@@ -388,7 +390,7 @@ class ReportsForm48 extends ConsumerWidget {
                   fontFamily: 'monospace',
                   fontSize: 12,
                   fontWeight: hasError ? FontWeight.bold : FontWeight.normal,
-                  color: hasError ? context.colors.error : const Color(0xFF179D53),
+                  color: hasError ? context.colors.error : context.colors.tertiary,
                 ),
               ),
             ),
