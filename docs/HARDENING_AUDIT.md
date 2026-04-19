@@ -32,3 +32,8 @@ A ruthless codebase audit was conducted across five critical domains:
 - **Fixed**: Standardized `DtrHeatmapCard` success/error colors with official Material 3 semantic roles (`tertiary` and `error`).
 - **Improved**: Added dynamic session labels ('TODAY', 'PAST ENTRY') in the Journal, replacing static placeholders.
 - **Improved**: Added semantic tooltips to export actions for improved accessibility.
+
+## Performance & DRY Refactoring
+- **Centralized**: Developed `PrismDateUtils` and `PrismDate` helpers to eliminate 5+ duplicated date formatting sites and UTC+8 computations.
+- **Optimized**: Redesigned the timeclock's real-time ticking logic to use a reusable stream field, reducing CPU and memory overhead.
+- **Polished**: Standardized SNACKBAR error display with theme-compatible tones across the camera overlay and settings screens.
