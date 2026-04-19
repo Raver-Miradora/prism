@@ -26,3 +26,9 @@ A ruthless codebase audit was conducted across five critical domains:
 - **Critical Fix**: Injected `if (!mounted)` guards throughout the PDF generation pipeline to prevent crashes if the user navigates away during rendering.
 - **Fixed**: Hardened all AI synthesis calls in `YapJournalController` with robust error handling and loading locks.
 - **Improved**: Added `isExporting` flag to decouple background export operations from the primary UI state, ensuring notes remain visible during PDF generation.
+
+## Domain 5: UI/UX Hardening
+- **Fixed**: Replaced hardcoded black/white colors in `ProgressRingWidget` with theme-aware `onSurface` tokens to ensure visibility in Dark Mode.
+- **Fixed**: Standardized `DtrHeatmapCard` success/error colors with official Material 3 semantic roles (`tertiary` and `error`).
+- **Improved**: Added dynamic session labels ('TODAY', 'PAST ENTRY') in the Journal, replacing static placeholders.
+- **Improved**: Added semantic tooltips to export actions for improved accessibility.
