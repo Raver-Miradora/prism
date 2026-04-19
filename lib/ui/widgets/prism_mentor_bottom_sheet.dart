@@ -68,6 +68,7 @@ class _PrismMentorBottomSheetState extends ConsumerState<PrismMentorBottomSheet>
     });
   }
 
+
   // ── Sending logic ──────────────────────────────────────────────────────────
 
   void _sendMessage({String? customText}) {
@@ -350,9 +351,9 @@ class _PrismMentorBottomSheetState extends ConsumerState<PrismMentorBottomSheet>
 
   @override
   void dispose() {
-    _pulseCtrl.dispose();
-    _inputController.dispose();
-    _scrollController.dispose();
+    _pulseCtrl.dispose();       // ✅ stops infinite repeat animation
+    _scrollController.dispose(); // ✅ releases ScrollPosition
+    _inputController.dispose(); // ✅ frees TextEditingController
     super.dispose();
   }
 }
