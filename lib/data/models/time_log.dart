@@ -53,28 +53,39 @@ class TimeLog {
   });
 
   factory TimeLog.fromMap(Map<String, dynamic> map) {
+    // ── Safe boolean helper: handles null, int (0/1), and bool literals
+    // from different SQLite driver versions. Defaults to false on null.
+    bool safeBool(dynamic v) => v == 1 || v == true;
+
+    // ── Safe date: never allow an empty string downstream; use a sentinel
+    // value that callers can check for rather than crashing on DateTime.parse.
+    final rawDate = map['date'];
+    final date = (rawDate is String && rawDate.isNotEmpty)
+        ? rawDate
+        : '1970-01-01'; // Sentinel — avoids DateTime.parse crash.
+
     return TimeLog(
       id: (map['id'] as num?)?.toInt(),
-      date: (map['date'] as String?) ?? '',
+      date: date,
       amArrivalTime: map['am_arrival_time'] as String?,
       pmDepartureTime: map['pm_departure_time'] as String?,
       latAmArrival: (map['lat_am_arrival'] as num?)?.toDouble(),
       lngAmArrival: (map['lng_am_arrival'] as num?)?.toDouble(),
       amArrivalPhotoPath: map['am_arrival_photo_path'] as String?,
-      isManualAmArrival: (map['is_manual_am_arrival'] as num?)?.toInt() == 1,
+      isManualAmArrival: safeBool(map['is_manual_am_arrival']),
       latPmDeparture: (map['lat_pm_departure'] as num?)?.toDouble(),
       lngPmDeparture: (map['lng_pm_departure'] as num?)?.toDouble(),
       pmDeparturePhotoPath: map['pm_departure_photo_path'] as String?,
-      isManualPmDeparture: (map['is_manual_pm_departure'] as num?)?.toInt() == 1,
+      isManualPmDeparture: safeBool(map['is_manual_pm_departure']),
       syncStatus: (map['sync_status'] as num?)?.toInt() ?? 0,
-      isFieldwork: (map['is_fieldwork'] as num?)?.toInt() == 1,
+      isFieldwork: safeBool(map['is_fieldwork']),
       fieldworkLocation: map['fieldwork_location'] as String?,
       fieldworkPurpose: map['fieldwork_purpose'] as String?,
       status: (map['status'] as String?) ?? 'WORK',
       recordStatus: (map['record_status'] as String?) ?? 'PRESENT',
       remarks: map['remarks'] as String?,
-      hasMissedPunch: map['has_missed_punch'] == 1 || map['has_missed_punch'] == true,
-      isGeofenceBypassed: map['is_geofence_bypassed'] == 1,
+      hasMissedPunch: safeBool(map['has_missed_punch']),
+      isGeofenceBypassed: safeBool(map['is_geofence_bypassed']),
     );
   }
 

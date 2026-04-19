@@ -79,6 +79,10 @@ class TimeLogRepository {
       orderBy: 'date ASC',
     );
 
-    return maps.map((m) => TimeLog.fromMap(m)).toList();
+    return maps
+        .map((m) => TimeLog.fromMap(m))
+        // Filter out any rows that produced the corruption sentinel date.
+        .where((log) => log.date != '1970-01-01')
+        .toList();
   }
 }
