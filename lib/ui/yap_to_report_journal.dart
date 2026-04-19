@@ -71,6 +71,7 @@ class _YapToReportJournalState extends ConsumerState<YapToReportJournal> {
   Widget build(BuildContext context) {
     final journalState = ref.watch(yapJournalProvider);
     final isLoading = journalState.reportStatus.isLoading;
+    final isExporting = journalState.isExporting;
 
     // Keep textField in sync lazily without interrupting typing
     ref.listen(yapJournalProvider, (previous, next) {
@@ -101,7 +102,7 @@ class _YapToReportJournalState extends ConsumerState<YapToReportJournal> {
                     const SizedBox(height: 24),
                     _buildNotesInput(context, isLoading),
                     const SizedBox(height: 24),
-                    _buildExportMonthlyButton(context, journalState.selectedDate, isLoading),
+                    _buildExportMonthlyButton(context, journalState.selectedDate, isExporting),
                     const SizedBox(height: 80), // Padding
                   ],
                 ),
@@ -207,7 +208,8 @@ class _YapToReportJournalState extends ConsumerState<YapToReportJournal> {
                     ),
                   ),
                   Text(
-                    'ACTIVE SESSION',
+                    // O5: Dynamic label reflecting the actual context of the entry
+                    _getSessionLabel(date),
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
@@ -446,10 +448,12 @@ class _YapToReportJournalState extends ConsumerState<YapToReportJournal> {
     );
   }
 
-  Widget _buildExportMonthlyButton(BuildContext context, DateTime selectedDate, bool isLoading) {
+  Widget _buildExportMonthlyButton(BuildContext context, DateTime selectedDate, bool isExporting) {
     return Center(
-      child: OutlinedButton.icon(
-        onPressed: isLoading ? null : () async {
+      child: Tooltip(
+        message: 'Export a date-range Accomplishment Report as PDF',
+        child: OutlinedButton.icon(
+          onPressed: isExporting ? null : () async {
           final range = await showDateRangePicker(
             context: context, 
             firstDate: DateTime(2025), 
@@ -532,6 +536,16 @@ class _YapToReportJournalState extends ConsumerState<YapToReportJournal> {
           style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
         ),
       ),
+      ), // closes Tooltip
     );
+  }
+
+  /// O5: Returns a context-aware session label based on the selected date
+  String _getSessionLabel(DateTime date) {
+    final now = DateTime.now();
+    final isToday = date.year == now.year && date.month == now.month && date.day == now.day;
+    if (isToday) return 'TODAY';
+    if (date.isBefore(now)) return 'PAST ENTRY';
+    return 'FUTURE DATE';
   }
 }
