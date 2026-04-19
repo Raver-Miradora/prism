@@ -7,19 +7,23 @@ import '../services/ai_report_service.dart';
 class YapJournalState {
   final DateTime selectedDate;
   final AsyncValue<DailyReport?> reportStatus;
+  final bool isExporting; // ← Separate flag; never clobbers inline editor state
   
   YapJournalState({
     required this.selectedDate, 
-    required this.reportStatus
+    required this.reportStatus,
+    this.isExporting = false,
   });
   
   YapJournalState copyWith({
     DateTime? selectedDate,
     AsyncValue<DailyReport?>? reportStatus,
+    bool? isExporting,
   }) {
     return YapJournalState(
       selectedDate: selectedDate ?? this.selectedDate,
       reportStatus: reportStatus ?? this.reportStatus,
+      isExporting: isExporting ?? this.isExporting,
     );
   }
 }
@@ -122,21 +126,25 @@ class YapJournalController extends StateNotifier<YapJournalState> {
 
   /// Aggregate all notes for a custom range and summarize for Preview
   Future<String?> retrieveRangeSummary(DateTime start, DateTime end) async {
-    state = state.copyWith(reportStatus: const AsyncValue.loading());
+    // Use dedicated isExporting flag — do NOT clobber inline reportStatus.
+    state = state.copyWith(isExporting: true);
     try {
       final reports = await _repo.getReportsForRange(start, end);
       final allNotes = reports.map((r) => r.rawNotes).where((n) => n.isNotEmpty).toList();
       
       if (allNotes.isEmpty) {
-         state = state.copyWith(reportStatus: AsyncValue.data(state.reportStatus.valueOrNull));
+         state = state.copyWith(isExporting: false);
          return null;
       }
       
       final summary = await _aiService.synthesizeMonthlySummary(allNotes);
-      state = state.copyWith(reportStatus: AsyncValue.data(state.reportStatus.valueOrNull));
+      state = state.copyWith(isExporting: false);
       return summary;
     } catch (e, stack) {
-      state = state.copyWith(reportStatus: AsyncValue.error(e, stack));
+      state = state.copyWith(
+        isExporting: false,
+        reportStatus: AsyncValue.error(e, stack),
+      );
       return null;
     }
   }
