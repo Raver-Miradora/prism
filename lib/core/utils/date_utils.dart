@@ -2,14 +2,20 @@ import 'package:intl/intl.dart';
 
 /// Centralized date utility for PRISM.
 /// Eliminates duplicated date-formatting and UTC+8 computation across controllers and screens.
+/// 
+/// This extension provides standard formatting for [DateTime] objects to match
+/// the SQLite key formats and human-readable display requirements.
 extension PrismDateUtils on DateTime {
-  /// Returns this DateTime formatted as 'yyyy-MM-dd' (the standard PRISM SQLite date key).
+  /// Returns this DateTime formatted as 'yyyy-MM-dd'.
+  /// This is the primary key format used in the PRISM journal and timeclock databases.
   String toIsoDate() => DateFormat('yyyy-MM-dd').format(this);
 
-  /// Returns this DateTime formatted as a human-readable display string.
+  /// Returns this DateTime formatted as a human-readable display string (e.g., 'April 19, 2026').
+  /// Used for major headers and profile displays.
   String toDisplayDate() => DateFormat('MMMM dd, yyyy').format(this);
 
   /// Returns this DateTime formatted as a short day label (e.g., 'Apr 19').
+  /// Used for small list items and recent history strips.
   String toShortDate() => DateFormat('MMM d').format(this);
 }
 
