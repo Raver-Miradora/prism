@@ -24,14 +24,22 @@ class PrismDate {
   PrismDate._(); // prevent instantiation
 
   /// Returns the current time in the Philippine timezone (UTC+8).
-  /// Use this everywhere instead of duplicating the .toUtc().add(Duration(hours: 8)) pattern.
+  /// 
+  /// This is used globally throughout PRISM to ensure that time-stamps 
+  /// and DTR calculations are consistent regardless of the device's
+  /// local time settings (which interns sometimes manipulate).
   static DateTime nowUtc8() =>
       DateTime.now().toUtc().add(const Duration(hours: 8));
 
   /// Returns the current date as an ISO string ('yyyy-MM-dd') in UTC+8.
   static String todayIso() => nowUtc8().toIsoDate();
 
-  /// Parses an ISO date string safely. Returns null if the string is invalid or the sentinel value.
+  /// Parses an ISO date string safely. 
+  /// 
+  /// Returns null if the string is:
+  /// - Null or empty
+  /// - The Unix epoch sentinel ('1970-01-01') used for corrupted records
+  /// - Syntactically invalid
   static DateTime? tryParseDate(String? isoDate) {
     if (isoDate == null || isoDate.isEmpty || isoDate == '1970-01-01') return null;
     try {
