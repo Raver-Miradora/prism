@@ -21,3 +21,8 @@ A ruthless codebase audit was conducted across five critical domains:
 - **Critical Fix**: Patched `TimeLog.fromMap` to handle nullable SQLite columns correctly, replacing unsafe hard-casts with robust null-coalescing.
 - **Improved**: Implemented sentinel-based `copyWith` in `InternSettings` to allow explicit clearing of nullable double fields (GPS coordinates).
 - **Data Guard**: Added repository-level filtering to silently drop corrupted rows before they reach the UI layer.
+
+## Domain 4: Async Context Safety
+- **Critical Fix**: Injected `if (!mounted)` guards throughout the PDF generation pipeline to prevent crashes if the user navigates away during rendering.
+- **Fixed**: Hardened all AI synthesis calls in `YapJournalController` with robust error handling and loading locks.
+- **Improved**: Added `isExporting` flag to decouple background export operations from the primary UI state, ensuring notes remain visible during PDF generation.
