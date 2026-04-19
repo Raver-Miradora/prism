@@ -45,6 +45,12 @@ Designed for high performance, stability, and future extensibility:
 - **Hardware Integration:** `geolocator` (Location API) and `camera` (Hardware API)
 - **CI/CD:** Automated testing and APK artifact generation via **GitHub Actions**.
 
+## 🛡️ Production Hardening
+PRISM has undergone a rigorous internal audit to ensure production-grade stability and resilience.
+- **[Audit Report (April 2026)](docs/HARDENING_AUDIT.md)**: 18 findings resolved across memory management, null safety, and async context logic.
+- **Stability**: Zero-crash tolerance for corrupted SQLite entries and legacy database migrations.
+- **Performance**: Optimized real-time UI synchronization and resource lifecycle management.
+
 ## 📱 Downloading & Installation
 
 You don't need to be a developer to install PRISM on your Android device!
