@@ -104,7 +104,6 @@ child: AnimatedSwitcher(
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w900,
-              color: Colors.black,
               letterSpacing: 2.0,
             ),
           ),
@@ -159,7 +158,7 @@ child: AnimatedSwitcher(
             'Tap for details',
             style: TextStyle(
               fontSize: 10,
-              color: Colors.black.withValues(alpha: 0.5),
+              color: context.colors.onSurfaceVariant.withValues(alpha: 0.6),
               fontStyle: FontStyle.italic,
             ),
           ),
