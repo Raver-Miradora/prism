@@ -78,7 +78,10 @@ class _SelfieCameraOverlayState extends State<SelfieCameraOverlay> {
       if (mounted) {
         setState(() => _isCapturing = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Capture failed: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Capture failed: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
         );
       }
     }
