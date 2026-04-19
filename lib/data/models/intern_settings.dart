@@ -60,8 +60,8 @@ class InternSettings {
     String? expectedTimeIn,
     String? expectedTimeOut,
     int? lunchBreakMins,
-    double? officeLat,
-    double? officeLng,
+    Object? officeLat = _sentinel,  // use sentinel to distinguish null-clear vs not provided
+    Object? officeLng = _sentinel,
     String? programType,
     String? schoolName,
     String? courseProgram,
@@ -72,11 +72,14 @@ class InternSettings {
       expectedTimeIn: expectedTimeIn ?? this.expectedTimeIn,
       expectedTimeOut: expectedTimeOut ?? this.expectedTimeOut,
       lunchBreakMins: lunchBreakMins ?? this.lunchBreakMins,
-      officeLat: officeLat ?? this.officeLat,
-      officeLng: officeLng ?? this.officeLng,
+      officeLat: officeLat == _sentinel ? this.officeLat : officeLat as double?,
+      officeLng: officeLng == _sentinel ? this.officeLng : officeLng as double?,
       programType: programType ?? this.programType,
       schoolName: schoolName ?? this.schoolName,
       courseProgram: courseProgram ?? this.courseProgram,
     );
   }
 }
+
+// Private sentinel for nullable copyWith disambiguation
+const Object _sentinel = Object();
