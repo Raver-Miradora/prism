@@ -338,6 +338,23 @@ class OnboardingPage3 extends ConsumerStatefulWidget {
 
 class OnboardingPage3State extends ConsumerState<OnboardingPage3> {
   final ScrollController _scrollController = ScrollController();
+  late final TextEditingController _hoursController;
+
+  @override
+  void initState() {
+    super.initState();
+    // Safely capture initial state target hours once
+    final initialHours = ref.read(onboardingProvider).targetHours;
+    _hoursController = TextEditingController(text: initialHours?.toString() ?? '');
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _hoursController.dispose();
+    super.dispose();
+  }
+
 
   void focusHours() {
     _scrollController.animateTo(
@@ -433,7 +450,7 @@ class OnboardingPage3State extends ConsumerState<OnboardingPage3> {
                       hintText: 'e.g. 486',
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: CivicHorizonTheme.outlineVariant.withAlpha(50))),
                     ),
-                    controller: TextEditingController(text: state.targetHours?.toString() ?? '')..selection = TextSelection.fromPosition(TextPosition(offset: (state.targetHours?.toString() ?? '').length)),
+                    controller: _hoursController,
                     onChanged: (val) {
                       final hrs = int.tryParse(val);
                       if (hrs != null) notifier.updateTargetHours(hrs);
