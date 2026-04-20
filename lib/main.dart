@@ -13,16 +13,8 @@ import 'package:geolocator/geolocator.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Strict Location Enforcement on Startup
-  // This ensures the GPS is on before the user even sees the dashboard.
-  try {
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      await Geolocator.openLocationSettings();
-    }
-  } catch (e) {
-    debugPrint('Startup Location Check Error: $e');
-  }
+  // The location check has been moved to the PrismApp initState
+  // to prevent blocking the Flutter engine initialization and avoiding ANRs.
 
   // Lock to portrait mode for standard app experience
   SystemChrome.setPreferredOrientations([
@@ -46,11 +38,34 @@ void main() async {
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-class PrismApp extends ConsumerWidget {
+class PrismApp extends ConsumerStatefulWidget {
   const PrismApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PrismApp> createState() => _PrismAppState();
+}
+
+class _PrismAppState extends ConsumerState<PrismApp> {
+  @override
+  void initState() {
+    super.initState();
+    // Non-blocking location check after UI starts painting
+    _checkLocationService();
+  }
+
+  Future<void> _checkLocationService() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        await Geolocator.openLocationSettings();
+      }
+    } catch (e) {
+      debugPrint('Startup Location Check Error: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final settingsState = ref.watch(settingsProvider);
     final themeState = ref.watch(themeControllerProvider);
 
