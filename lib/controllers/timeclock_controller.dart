@@ -126,9 +126,13 @@ class TimeclockController extends StateNotifier<TimeclockState> {
     } catch (e, stack) {
       debugPrint('PRISM_CRITICAL_FAILURE in _loadInitialState: ${e.toString()}');
       debugPrint('STACK_TRACE: $stack');
-      state = state.copyWith(
+      // Emit a COMPLETE safe state — not a partial copyWith — so the UI always
+      // has a fully valid, non-loading state to render even after a DB failure.
+      state = TimeclockState(
         isLoading: false,
-        errorMessage: 'Failed to load initial state: ${e.toString()}',
+        accumulatedHours: 0.0,
+        targetHours: 486,
+        errorMessage: 'Startup load failed: ${e.toString()}',
       );
     }
   }
@@ -136,6 +140,10 @@ class TimeclockController extends StateNotifier<TimeclockState> {
   Future<void> punchTimeclock() async {
     final phase = state.punchPhase;
     if (phase == PunchPhase.done) return; // Shift completed
+
+    // Snapshot the state BEFORE any async work so we can restore it on failure.
+    // This is the key to preventing a blank screen after a DB or hardware error.
+    final stateBeforePunch = state;
 
     state = state.copyWith(isLoading: true);
     try {
@@ -282,13 +290,20 @@ class TimeclockController extends StateNotifier<TimeclockState> {
     } catch (e, stack) {
       debugPrint('PRISM_CRITICAL_FAILURE: ${e.toString()}');
       debugPrint('STACK_TRACE: $stack');
+      
       if (e is CameraException && e.message.contains('cancelled')) {
-        state = state.copyWith(isLoading: false, errorMessage: null);
+        // Silent cancel — just restore the pre-punch state, no error message.
+        state = stateBeforePunch.copyWith(isLoading: false);
         return;
       }
-      state = state.copyWith(
+
+      // ── STATE RECOVERY: restore the pre-punch snapshot so the UI tree always
+      // has a valid, non-null state to render. Without this the Dashboard goes blank.
+      state = stateBeforePunch.copyWith(
         isLoading: false,
-        errorMessage: e.toString().contains('Out of Bounds') ? e.toString() : 'Punch failed: ${e.toString()}',
+        errorMessage: e.toString().contains('Out of Bounds')
+            ? e.toString()
+            : 'Punch failed: ${e.toString()}',
       );
     }
   }
