@@ -20,24 +20,19 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 13,
+      version: 14,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
   }
 
   Future _upgradeDB(Database db, int oldVersion, int newVersion) async {
-    if (oldVersion < 13) {
-      try {
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_time_logs_date ON time_logs(date)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_daily_reports_date ON daily_reports(date)');
-      } catch (_) {}
-    }
     if (oldVersion < 2) {
       try {
         await db.execute('ALTER TABLE intern_profile ADD COLUMN profile_image_path TEXT');
       } catch (_) {}
     }
+
     if (oldVersion < 3) {
       try {
         await db.execute('ALTER TABLE intern_settings ADD COLUMN office_lat REAL');
@@ -45,17 +40,7 @@ class DatabaseHelper {
         await db.execute('ALTER TABLE intern_settings ADD COLUMN program_type TEXT DEFAULT "OJT"');
       } catch (_) {}
     }
-    if (oldVersion < 11) {
-      try {
-        await db.execute('ALTER TABLE intern_settings ADD COLUMN school_name TEXT');
-        await db.execute('ALTER TABLE intern_settings ADD COLUMN course_program TEXT');
-      } catch (_) {}
-    }
-    if (oldVersion < 12) {
-      try {
-        await db.execute('ALTER TABLE time_logs ADD COLUMN is_geofence_bypassed INTEGER NOT NULL DEFAULT 0');
-      } catch (_) {}
-    }
+
     if (oldVersion < 4) {
       try {
         await db.execute('ALTER TABLE time_logs ADD COLUMN is_fieldwork INTEGER DEFAULT 0');
@@ -63,18 +48,21 @@ class DatabaseHelper {
         await db.execute('ALTER TABLE time_logs ADD COLUMN remarks TEXT');
       } catch (_) {}
     }
+
     if (oldVersion < 5) {
       try {
         await db.execute('ALTER TABLE time_logs ADD COLUMN time_lunch_out TEXT');
         await db.execute('ALTER TABLE time_logs ADD COLUMN time_lunch_in TEXT');
       } catch (_) {}
     }
+
     if (oldVersion < 6) {
       try {
         await db.execute('ALTER TABLE time_logs ADD COLUMN fieldwork_location TEXT');
         await db.execute('ALTER TABLE time_logs ADD COLUMN fieldwork_purpose TEXT');
       } catch (_) {}
     }
+
     if (oldVersion < 7) {
       // Phase 2 Migration: 4-Column Sequence + Manual Flags
       await db.execute('BEGIN TRANSACTION');
@@ -152,6 +140,36 @@ class DatabaseHelper {
         await db.execute("ALTER TABLE time_logs ADD COLUMN record_status TEXT NOT NULL DEFAULT 'PRESENT'");
       } catch (_) {} // Column may already exist on fresh installs from _createDB
     }
+
+    if (oldVersion < 11) {
+      try {
+        await db.execute('ALTER TABLE intern_settings ADD COLUMN school_name TEXT');
+        await db.execute('ALTER TABLE intern_settings ADD COLUMN course_program TEXT');
+      } catch (_) {}
+    }
+
+    if (oldVersion < 12) {
+      try {
+        await db.execute('ALTER TABLE time_logs ADD COLUMN is_geofence_bypassed INTEGER NOT NULL DEFAULT 0');
+      } catch (_) {}
+    }
+
+    if (oldVersion < 13) {
+      try {
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_time_logs_date ON time_logs(date)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_daily_reports_date ON daily_reports(date)');
+      } catch (_) {}
+    }
+
+    // V14: Add missing has_missed_punch column that was referenced in the model
+    // but was never added to the schema. This caused a fatal crash on fresh Clock In.
+    if (oldVersion < 14) {
+      try {
+        await db.execute(
+          'ALTER TABLE time_logs ADD COLUMN has_missed_punch INTEGER NOT NULL DEFAULT 0',
+        );
+      } catch (_) {} // Ignore if already exists (fresh installs via _createDB)
+    }
   }
 
   Future _createDB(Database db, int version) async {
@@ -177,7 +195,8 @@ class DatabaseHelper {
         remarks TEXT,
         fieldwork_location TEXT,
         fieldwork_purpose TEXT,
-        is_geofence_bypassed INTEGER NOT NULL DEFAULT 0
+        is_geofence_bypassed INTEGER NOT NULL DEFAULT 0,
+        has_missed_punch INTEGER NOT NULL DEFAULT 0
       )
     ''');
 
