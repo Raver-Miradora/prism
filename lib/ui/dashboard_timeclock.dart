@@ -77,6 +77,9 @@ class _DashboardTimeclockState extends ConsumerState<DashboardTimeclock> {
             Expanded(
               child: Stack(
                 children: [
+                  // ── STABLE WIDGET TREE ──
+                  // We use a Stack to keep the SingleChildScrollView mounted even during loading.
+                  // This prevents "element tree consistency" assertion errors when async ops finish.
                   SingleChildScrollView(
                     padding: const EdgeInsets.only(left: 24.0, right: 24.0, top: 8.0, bottom: 32.0),
                     child: Column(
