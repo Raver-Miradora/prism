@@ -5,7 +5,7 @@ import 'dart:async';
 final securityServiceProvider = Provider((ref) => SecurityService());
 
 class SecurityService {
-  static const _platform = MethodChannel('com.prism.security/settings');
+  static const _platform = MethodChannel('ph.gov.lagonoy.prism.security/settings');
   
   /// Checks if Android's "Automatic Date & Time" is enabled.
   /// Falls back to true on non-Android platforms for development.
