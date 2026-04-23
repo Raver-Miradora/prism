@@ -151,12 +151,16 @@ class PdfService {
               children: [
                 pw.Text('Name: ', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
                 pw.Expanded(
-                  child: pw.FittedBox(
-                    fit: pw.BoxFit.scaleDown,
-                    alignment: pw.Alignment.centerLeft,
-                    child: pw.Text(
-                      profile.name.isEmpty ? "________________________" : profile.name,
-                      style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+                  child: pw.Container(
+                    decoration: const pw.BoxDecoration(
+                      border: pw.Border(bottom: pw.BorderSide(width: 0.5))
+                    ),
+                    child: pw.Padding(
+                      padding: const pw.EdgeInsets.only(bottom: 1, left: 4),
+                      child: pw.Text(
+                        profile.name.isEmpty ? "" : profile.name.toUpperCase(),
+                        style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+                      ),
                     ),
                   ),
                 ),
@@ -226,17 +230,14 @@ class PdfService {
                       children: [
                         pw.Container(
                           width: 180,
-                          child: pw.FittedBox(
-                            fit: pw.BoxFit.scaleDown,
+                          decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide())),
+                          padding: const pw.EdgeInsets.only(bottom: 2),
+                          child: pw.Center(
                             child: pw.Text(
                               profile.supervisorName.isEmpty ? '' : profile.supervisorName.toUpperCase(),
                               style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
                             ),
                           ),
-                        ),
-                        pw.Container(
-                          width: 180,
-                          decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide())),
                         ),
                         pw.SizedBox(height: 2),
                         pw.Text('OFFICE HEAD', style: const pw.TextStyle(fontSize: 8)),
@@ -252,17 +253,14 @@ class PdfService {
                     pw.SizedBox(height: 20),
                     pw.Container(
                       width: 180,
-                      child: pw.FittedBox(
-                        fit: pw.BoxFit.scaleDown,
+                      decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide())),
+                      padding: const pw.EdgeInsets.only(bottom: 2),
+                      child: pw.Center(
                         child: pw.Text(
                           profile.name.isEmpty ? '' : profile.name.toUpperCase(),
                           style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
                         ),
                       ),
-                    ),
-                    pw.Container(
-                      width: 180,
-                      decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide())),
                     ),
                     pw.SizedBox(height: 2),
                     pw.Text(
@@ -399,10 +397,11 @@ class PdfService {
           
           pw.Container(
             width: 220,
-            child: pw.FittedBox(
-              fit: pw.BoxFit.scaleDown,
+            decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide(width: 0.5))),
+            padding: const pw.EdgeInsets.only(bottom: 1),
+            child: pw.Center(
               child: pw.Text(
-                profile.name.isEmpty ? '____________________________' : profile.name.toUpperCase(), 
+                profile.name.isEmpty ? '' : profile.name.toUpperCase(), 
                 style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)
               ),
             ),
