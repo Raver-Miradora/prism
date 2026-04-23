@@ -305,6 +305,7 @@ class TimeclockController extends StateNotifier<TimeclockState> {
             ? e.toString()
             : 'Punch failed: ${e.toString()}',
       );
+      rethrow;
     }
   }
 
