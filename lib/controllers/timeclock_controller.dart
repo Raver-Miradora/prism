@@ -297,7 +297,8 @@ class TimeclockController extends StateNotifier<TimeclockState> {
         return;
       }
 
-      // ── STATE RECOVERY: restore the pre-punch snapshot so the UI tree always
+      // ── SNAPSHOT RESTORATION PATTERN ──
+      // restore the pre-punch snapshot so the UI tree always
       // has a valid, non-null state to render. Without this the Dashboard goes blank.
       state = stateBeforePunch.copyWith(
         isLoading: false,
