@@ -52,7 +52,9 @@ class _ClockInWidgetState extends State<ClockInWidget> {
         setState(() {
            _dragPosition = 0.0;
         });
-        // Centralized error listener in Dashboard handles the SnackBar now
+        // ── CENTRALIZED FEEDBACK ──
+        // The error is now handled by the Dashboard's ref.listen listener
+        // to prevent duplicate snackbars and ensure tree stability.
       }
     } finally {
       if (mounted) {
