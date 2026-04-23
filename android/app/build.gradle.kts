@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.prism.prism"
+    namespace = "ph.gov.lagonoy.prism"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -21,7 +21,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.prism.prism"
+        applicationId = "ph.gov.lagonoy.prism"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
@@ -32,8 +32,9 @@ android {
 
     buildTypes {
         release {
-            // Generates an unsigned release APK ready for manual signing
-            // or CI/CD pipelines. Debug keys are no longer injected.
+            // Re-enabling debug signing for local release testing.
+            // This allows the APK to be installed on devices without a production keystore.
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 }
