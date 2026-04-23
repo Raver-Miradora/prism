@@ -52,7 +52,7 @@ class _ClockInWidgetState extends State<ClockInWidget> {
         setState(() {
            _dragPosition = 0.0;
         });
-        AppFeedback.showError(context, 'Failed to log attendance. ${e.toString()}');
+        // Centralized error listener in Dashboard handles the SnackBar now
       }
     } finally {
       if (mounted) {
