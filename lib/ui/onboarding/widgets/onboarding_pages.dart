@@ -12,10 +12,10 @@ class OnboardingPage1 extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const String logoPath = 'C:/Users/User/.gemini/antigravity/brain/488b41bf-ecb6-465b-8604-7b6f7b41ac08/prism_logo_1774766315620.png';
-    const String heroImagePath = 'C:/Users/User/.gemini/antigravity/brain/fddd80e3-ee58-430b-b0d4-4d65da4e1f32/onboarding_hero_hourglass_1774760000704.png';
+    const String logoAsset = 'assets/images/app_logo.png';
+    const String heroAsset = 'assets/images/onboarding_hero.png';
 
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 40),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -32,7 +32,7 @@ class OnboardingPage1 extends StatelessWidget {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(20),
-              child: Image.file(File(logoPath), fit: BoxFit.contain),
+              child: Image.asset(logoAsset, fit: BoxFit.contain),
             ),
           ),
           const SizedBox(height: 32),
@@ -42,8 +42,8 @@ class OnboardingPage1 extends StatelessWidget {
             decoration: BoxDecoration(
               boxShadow: CivicHorizonTheme.ambientGlow(context),
             ),
-            child: Image.file(
-              File(heroImagePath),
+            child: Image.asset(
+              heroAsset,
               fit: BoxFit.contain,
             ),
           ),
