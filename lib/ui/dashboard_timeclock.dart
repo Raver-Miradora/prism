@@ -44,7 +44,7 @@ class _DashboardTimeclockState extends ConsumerState<DashboardTimeclock> {
 
     // Error listener
     ref.listen(timeclockControllerProvider.select((s) => s.errorMessage), (prev, next) {
-      if (next != null && next.isNotEmpty) {
+      if (next != null && next.isNotEmpty && mounted) {
         AppFeedback.showError(context, next);
         notifier.clearError();
       }
@@ -75,33 +75,40 @@ class _DashboardTimeclockState extends ConsumerState<DashboardTimeclock> {
           children: [
             _buildTopAppBar(context),
             Expanded(
-              child: state.isLoading 
-                ? const Center(child: CircularProgressIndicator())
-                : SingleChildScrollView(
-                padding: const EdgeInsets.only(left: 24.0, right: 24.0, top: 8.0, bottom: 32.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    const SizedBox(height: 16),
-                    _buildDigitalClock(context, state),
-                    const SizedBox(height: 32),
-                    if (!isAutoTimeEnabled) _buildSecurityLockBanner(context),
-                    const SizedBox(height: 16),
-                    _buildStatusBar(context, isClockedIn),
-                    const SizedBox(height: 32),
-                    _buildActionButtons(context, isClockedIn, notifier, state, isAutoTimeEnabled),
-                    const SizedBox(height: 16),
-                    _buildLogAbsenceButton(context, ref),
-                    const SizedBox(height: 32),
-                    ProgressRingWidget(
-                      accumulatedHours: state.accumulatedHours,
-                      targetHours: state.targetHours.toDouble(),
+              child: Stack(
+                children: [
+                  SingleChildScrollView(
+                    padding: const EdgeInsets.only(left: 24.0, right: 24.0, top: 8.0, bottom: 32.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const SizedBox(height: 16),
+                        _buildDigitalClock(context, state),
+                        const SizedBox(height: 32),
+                        if (!isAutoTimeEnabled) _buildSecurityLockBanner(context),
+                        const SizedBox(height: 16),
+                        _buildStatusBar(context, isClockedIn),
+                        const SizedBox(height: 32),
+                        _buildActionButtons(context, isClockedIn, notifier, state, isAutoTimeEnabled),
+                        const SizedBox(height: 16),
+                        _buildLogAbsenceButton(context, ref),
+                        const SizedBox(height: 32),
+                        ProgressRingWidget(
+                          accumulatedHours: state.accumulatedHours,
+                          targetHours: state.targetHours.toDouble(),
+                        ),
+                        const SizedBox(height: 32),
+                        const DtrHeatmapCard(),
+                        const SizedBox(height: 100),
+                      ],
                     ),
-                    const SizedBox(height: 32),
-                    const DtrHeatmapCard(),
-                    const SizedBox(height: 100),
-                  ],
-                ),
+                  ),
+                  if (state.isLoading)
+                    Container(
+                      color: Colors.black12,
+                      child: const Center(child: CircularProgressIndicator()),
+                    ),
+                ],
               ),
             ),
           ],
