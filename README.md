@@ -28,11 +28,11 @@ Say goodbye to messy logbooks, forgotten biometric punches, and manual document 
 
 ## Key Features
 
-- ** Identity-Verified Timeclock:** Check-in and check-out tracking locked with high-accuracy GPS coordinates and selfie-camera verification to ensure authenticity.
-- ** "Hourglass" Engine:** Automatically tracks your accumulated vs. target hours, strictly enforces actual minute-based late deductions, and maps official work shifts (e.g. 8:00 AM – 5:00 PM).
-- ** "Yap-to-Report" Workflow:** Jot down informal notes throughout the day in your journal. PRISM intelligently synthesizes these notes into structured summary bullets for your official Accomplishment Report.
-- ** Deep Dark Mode:** Beautiful, battery-saving dark mode with vibrant interactive elements utilizing Material 3 guidelines.
-- ** Safe Local Data:** Built with a resilient `sqflite` architecture.
+- **Identity-Verified Timeclock:** Check-in and check-out tracking locked with high-accuracy GPS coordinates and selfie-camera verification to ensure authenticity.
+- **"Hourglass" Engine:** Automatically tracks your accumulated vs. target hours, strictly enforces actual minute-based late deductions, and maps official work shifts (e.g. 8:00 AM – 5:00 PM).
+- **"Yap-to-Report" Workflow:** Jot down informal notes throughout the day in your journal. PRISM intelligently synthesizes these notes into structured summary bullets for your official Accomplishment Report.
+- **Deep Dark Mode:** Beautiful, battery-saving dark mode with vibrant interactive elements utilizing Material 3 guidelines.
+- **Safe Local Data:** Built with a resilient `sqflite` architecture.
 
 ## Technology Stack
 
