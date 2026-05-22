@@ -19,22 +19,22 @@
 
 <br/>
 
-## ✨ Why PRISM?
+## Why PRISM?
 Say goodbye to messy logbooks, forgotten biometric punches, and manual document formatting. PRISM was built with the **"Civic Horizon"** design system to provide a premium, frictionless experience tailored specifically for civil service expectations. 
 
-* 📵 **True Offline-First:** Out in the field or in a dead zone? No problem. All database actions, time tracking, and even complex PDF rendering happen 100% locally on your device.
-* ⚖️ **Government Compliant:** Stop wrestling with Word documents. PRISM's mathematical engine strictly enforces DTR rules (stripping excess overtime, dynamically calculating undertime) and natively outputs a pixel-perfect **Civil Service Commission (CSC) Form 48**.
-* 🧑‍💻 **Twin Report Generation:** Need an editable file? PRISM powers a dual-generation engine that outputs both an immutable, high-fidelity PDF and an editable `DOCX` file simultaneously.
+* **True Offline-First:** Out in the field or in a dead zone? No problem. All database actions, time tracking, and even complex PDF rendering happen 100% locally on your device.
+* **Government Compliant:** Stop wrestling with Word documents. PRISM's mathematical engine strictly enforces DTR rules (stripping excess overtime, dynamically calculating undertime) and natively outputs a pixel-perfect **Civil Service Commission (CSC) Form 48**.
+* **Twin Report Generation:** Need an editable file? PRISM powers a dual-generation engine that outputs both an immutable, high-fidelity PDF and an editable `DOCX` file simultaneously.
 
-## 🚀 Key Features
+## Key Features
 
-- **📍 Identity-Verified Timeclock:** Check-in and check-out tracking locked with high-accuracy GPS coordinates and selfie-camera verification to ensure authenticity.
-- **⏳ "Hourglass" Engine:** Automatically tracks your accumulated vs. target hours, strictly enforces actual minute-based late deductions, and maps official work shifts (e.g. 8:00 AM – 5:00 PM).
-- **📋 "Yap-to-Report" Workflow:** Jot down informal notes throughout the day in your journal. PRISM intelligently synthesizes these notes into structured summary bullets for your official Accomplishment Report.
-- **🌙 Deep Dark Mode:** Beautiful, battery-saving dark mode with vibrant interactive elements utilizing Material 3 guidelines.
-- **💾 Safe Local Data:** Built with a resilient `sqflite` architecture.
+- ** Identity-Verified Timeclock:** Check-in and check-out tracking locked with high-accuracy GPS coordinates and selfie-camera verification to ensure authenticity.
+- ** "Hourglass" Engine:** Automatically tracks your accumulated vs. target hours, strictly enforces actual minute-based late deductions, and maps official work shifts (e.g. 8:00 AM – 5:00 PM).
+- ** "Yap-to-Report" Workflow:** Jot down informal notes throughout the day in your journal. PRISM intelligently synthesizes these notes into structured summary bullets for your official Accomplishment Report.
+- ** Deep Dark Mode:** Beautiful, battery-saving dark mode with vibrant interactive elements utilizing Material 3 guidelines.
+- ** Safe Local Data:** Built with a resilient `sqflite` architecture.
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 Designed for high performance, stability, and future extensibility:
 
@@ -45,13 +45,13 @@ Designed for high performance, stability, and future extensibility:
 - **Hardware Integration:** `geolocator` (Location API) and `camera` (Hardware API)
 - **CI/CD:** Automated testing and APK artifact generation via **GitHub Actions**.
 
-## 🛡️ Production Hardening
+## Production Hardening
 PRISM has undergone a rigorous internal audit to ensure production-grade stability and resilience.
 - **[Audit Report (April 2026)](docs/HARDENING_AUDIT.md)**: 18 findings resolved across memory management, null safety, and async context logic.
 - **Stability**: Zero-crash tolerance for corrupted SQLite entries and legacy database migrations.
 - **Performance**: Optimized real-time UI synchronization and resource lifecycle management.
 
-## 📱 Downloading & Installation
+## Downloading & Installation
 
 You don't need to be a developer to install PRISM on your Android device!
 
@@ -62,7 +62,7 @@ You don't need to be a developer to install PRISM on your Android device!
 
 > **Note:** Since this is an independent open-source application, you may need to allow "Install from Unknown Sources" in your Android settings.
 
-## 💻 Building from Source
+## Building from Source
 
 If you want to contribute, run the app locally, or run the test suite:
 
